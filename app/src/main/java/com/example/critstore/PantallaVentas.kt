@@ -14,28 +14,16 @@ fun PantallaVentas(
     generarPlanilla: () -> Unit,
     reporteVentas: () -> Unit
 ) {
-
-
     Column(
-
         modifier = Modifier
             .fillMaxSize()
             .padding(30.dp),
-
         horizontalAlignment = Alignment.CenterHorizontally,
-
         verticalArrangement = Arrangement.Center
-
     ) {
-
-
-
         Text(
-
             text = "Ventas",
-
             style = MaterialTheme.typography.headlineLarge
-
         )
         Button(
             onClick = generarPlanilla,
@@ -45,48 +33,19 @@ fun PantallaVentas(
         ) {
             Text("📝 Generar Nueva Planilla")
         }
-
-
-
-
-
-
         Button(
-
             onClick = reporteVentas,
-
-
             modifier = Modifier
                 .padding(10.dp)
                 .fillMaxWidth()
-
         ) {
-
-
             Text("📊 Reporte de Ventas")
-
         }
-
-
-
-
-
         Button(
-
             onClick = volver,
-
-
             modifier = Modifier.padding(10.dp)
-
         ) {
-
-
             Text("⬅ Volver")
-
         }
-
-
-
     }
-
 }

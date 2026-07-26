@@ -1,6 +1,12 @@
 package com.example.critstore
-
-
+import android.content.ContentValues
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Paint
+import android.graphics.pdf.PdfDocument
+import android.os.Environment
+import android.provider.MediaStore
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,7 +20,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.launch
-
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 @Composable
 fun ActualizarStock(
     productoDao: ProductoDao,
@@ -120,8 +128,6 @@ fun ActualizarStock(
                             modifier = Modifier
                                 .width(70.dp)
                                 .height(45.dp),
-
-
                             singleLine = true
                         )
                         IconButton(

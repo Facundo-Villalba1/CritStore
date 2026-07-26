@@ -14,10 +14,10 @@ import androidx.compose.ui.unit.dp
 import androidx.room.Room
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
+   override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            val db = remember {
+       setContent {
+           val db = remember {
                 Room.databaseBuilder(
                     applicationContext,
                     AppDatabase::class.java,
@@ -26,17 +26,17 @@ class MainActivity : ComponentActivity() {
                     .fallbackToDestructiveMigration()
                     .build()
             }
-            var pantalla by remember {
+           var pantalla by remember {
                 mutableStateOf("inicio")
             }
-            var planillaSeleccionada by remember {
+           var planillaSeleccionada by remember {
                 mutableStateOf(0)
             }
-            var planillaActual by remember {
+           var planillaActual by remember {
                 mutableStateOf<PlanillaVenta?>(null)
             }
-            when (pantalla) {
-                "inicio" -> PantallaPrincipal(
+           when (pantalla) {
+               "inicio" -> PantallaPrincipal(
                     productos = {
                         pantalla = "productos"
                     },
@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
                         pantalla = "ventas"
                     }
                 )
-                "productos" -> PantallaProductos(
+               "productos" -> PantallaProductos(
                     volver = {
                         pantalla = "inicio"
                     },
@@ -58,7 +58,7 @@ class MainActivity : ComponentActivity() {
                         pantalla = "actualizarStock"
                     }
                 )
-                "ingresarProducto" -> IngresarProducto(
+               "ingresarProducto" -> IngresarProducto(
                     productoDao = db.productoDao(),
                     volver = {
                         pantalla = "productos"
@@ -68,15 +68,21 @@ class MainActivity : ComponentActivity() {
                     productoDao = db.productoDao(),
                     volver = {
                         pantalla = "productos"
+                    },
+                    generarPDF = { lista ->
+                        generarPDFStock(
+                            this,
+                            lista
+                        )
                     }
                 )
-                "actualizarStock" -> ActualizarStock(
+               "actualizarStock" -> ActualizarStock(
                     productoDao = db.productoDao(),
                     volver = {
                         pantalla = "productos"
                     }
                 )
-                "ventas" -> PantallaVentas(
+               "ventas" -> PantallaVentas(
                     volver = {
                         pantalla = "inicio"
                     },
@@ -87,25 +93,25 @@ class MainActivity : ComponentActivity() {
                         pantalla = "reporteVentas"
                     }
                 )
-                "generarPlanilla" -> GenerarPlanilla(
+               "generarPlanilla" -> GenerarPlanilla(
                     productoDao = db.productoDao(),
                     planillaDao = db.planillaDao(),
                     volver = {
                         pantalla = "ventas"
                     }
                 )
-                "reporteVentas" -> ReporteVentas(
+               "reporteVentas" -> ReporteVentas(
                     planillaDao = db.planillaDao(),
                     verDetalle = { planilla ->
-                        planillaSeleccionada = planilla.id
+                       planillaSeleccionada = planilla.id
                         planillaActual = planilla
                         pantalla = "detalleVenta"
-                    },
+                   },
                     volver = {
                         pantalla = "ventas"
                     }
                 )
-                "detalleVenta" -> DetalleVenta(
+               "detalleVenta" -> DetalleVenta(
                     planillaId = planillaSeleccionada,
                     planillaDao = db.planillaDao(),
                     planilla = planillaActual!!,
@@ -117,19 +123,22 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+
+
 @Composable
 fun PantallaPrincipal(
     productos: () -> Unit,
     ventas: () -> Unit
 ) {
-    Column(
+   Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(30.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+       horizontalAlignment = Alignment.CenterHorizontally,
+       verticalArrangement = Arrangement.Center
     ) {
-        Image(
+       Image(
             painter = painterResource(
                 id = R.drawable.logo_critstore
             ),
@@ -137,31 +146,31 @@ fun PantallaPrincipal(
             modifier = Modifier
                 .size(180.dp)
         )
-        Spacer(
+       Spacer(
             modifier = Modifier.height(20.dp)
         )
-        Text(
+       Text(
             text = "CritStore",
             style = MaterialTheme.typography.headlineLarge
         )
-        Spacer(
+       Spacer(
             modifier = Modifier.height(30.dp)
         )
-        Button(
+       Button(
             onClick = productos,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(10.dp)
         ) {
-            Text("📦 Productos")
-        }
-        Button(
+           Text("📦 Productos")
+       }
+       Button(
             onClick = ventas,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(10.dp)
         ) {
-            Text("💰 Ventas")
-        }
+           Text("💰 Ventas")
+       }
     }
 }

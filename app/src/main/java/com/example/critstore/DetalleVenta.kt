@@ -127,7 +127,7 @@ fun DetalleVenta(
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("📄 Exportar PDF")
+            Text("📄 Generar PDF")
         }
         Spacer(
             modifier = Modifier.height(10.dp)
@@ -160,6 +160,7 @@ fun generarPDF(
     val paint = Paint()
     var y = 50f
     // TITULO
+    paint.style = Paint.Style.FILL
     paint.textSize = 24f
     paint.isFakeBoldText = true
     canvas.drawText(
@@ -177,6 +178,7 @@ fun generarPDF(
         paint
     )
     y += 35
+    // DATOS EVENTO
     paint.textSize = 14f
     paint.isFakeBoldText = false
     canvas.drawText(
@@ -199,7 +201,7 @@ fun generarPDF(
         y,
         paint
     )
-    y += 35
+    y += 30
     val fechaGeneracion =
         SimpleDateFormat(
             "dd/MM/yyyy HH:mm",
@@ -213,76 +215,127 @@ fun generarPDF(
         paint
     )
     y += 35
+    // CONFIGURACION TABLA
+    val inicioX = 40f
+    val anchoProducto = 260f
+    val anchoCantidad = 100f
+    val anchoTotal = 120f
+    val altoFila = 30f
+    val anchoTabla =
+        anchoProducto + anchoCantidad + anchoTotal
     // CABECERA TABLA
-    paint.textSize = 14f
+    paint.style = Paint.Style.STROKE
+    paint.strokeWidth = 1f
+    canvas.drawRect(
+        inicioX,
+        y,
+        inicioX + anchoTabla,
+        y + altoFila,
+        paint
+    )
+    canvas.drawLine(
+        inicioX + anchoProducto,
+        y,
+        inicioX + anchoProducto,
+        y + altoFila,
+        paint
+    )
+    canvas.drawLine(
+        inicioX + anchoProducto + anchoCantidad,
+        y,
+        inicioX + anchoProducto + anchoCantidad,
+        y + altoFila,
+        paint
+    )
+    paint.style = Paint.Style.FILL
+    paint.textSize = 13f
     paint.isFakeBoldText = true
     canvas.drawText(
         "Producto",
-        50f,
-        y,
+        inicioX + 10,
+        y + 20,
         paint
     )
     canvas.drawText(
         "Cantidad",
-        300f,
-        y,
+        inicioX + anchoProducto + 15,
+        y + 20,
         paint
     )
     canvas.drawText(
         "Total",
-        450f,
-        y,
+        inicioX + anchoProducto + anchoCantidad + 25,
+        y + 20,
         paint
     )
-    y += 10
-    canvas.drawLine(
-        40f,
-        y,
-        550f,
-        y,
-        paint
-    )
-    y += 25
+    y += altoFila
+    // DETALLE TABLA
     paint.textSize = 12f
     paint.isFakeBoldText = false
     detalles.forEach { detalle ->
+        paint.style = Paint.Style.STROKE
+        canvas.drawRect(
+            inicioX,
+            y,
+            inicioX + anchoTabla,
+            y + altoFila,
+            paint
+        )
+        canvas.drawLine(
+            inicioX + anchoProducto,
+            y,
+            inicioX + anchoProducto,
+            y + altoFila,
+            paint
+        )
+        canvas.drawLine(
+            inicioX + anchoProducto + anchoCantidad,
+            y,
+            inicioX + anchoProducto + anchoCantidad,
+            y + altoFila,
+            paint
+        )
+        paint.style = Paint.Style.FILL
         canvas.drawText(
             detalle.Nombre,
-            50f,
-            y,
+            inicioX + 10,
+            y + 20,
             paint
         )
         canvas.drawText(
             detalle.Ventas.toString(),
-            320f,
-            y,
+            inicioX + anchoProducto + 35,
+            y + 20,
             paint
         )
         canvas.drawText(
             "$${detalle.total}",
-            450f,
-            y,
+            inicioX + anchoProducto + anchoCantidad + 25,
+            y + 20,
             paint
         )
-        canvas.drawLine(
-            40f,
-            y + 8,
-            550f,
-            y + 8,
-            paint
-        )
-        y += 30
+        y += altoFila
     }
-    y += 20
-    paint.textSize = 18f
+    y += 25
+    // TOTAL VENTA
+    paint.style = Paint.Style.STROKE
+    canvas.drawRect(
+        300f,
+        y,
+        550f,
+        y + 35,
+        paint
+    )
+    paint.style = Paint.Style.FILL
+    paint.textSize = 16f
     paint.isFakeBoldText = true
     canvas.drawText(
         "TOTAL VENTA: $${total}",
-        330f,
-        y,
+        315f,
+        y + 23,
         paint
     )
-    // LOGO PIE DE PAGINA
+    // LOGO PIE
     val logo = BitmapFactory.decodeResource(
         context.resources,
         R.drawable.logo_critstore
@@ -301,9 +354,8 @@ fun generarPDF(
         700f,
         paint
     )
-
     documento.finishPage(pagina)
-    // NOMBRE ARCHIVO PDF
+    // GUARDAR PDF
     val nombreArchivo =
         "${nombreEvento}_${fechaDesde}_${fechaHasta}.pdf"
             .replace(
