@@ -4,12 +4,12 @@ object TempPlanilla {
     var nombreEvento: String = ""
     var fechaDesde: String = ""
     var fechaHasta: String = ""
-    var cantidadesVenta: MutableMap<Int, String> =
-        mutableMapOf()
+    var cantidadesVenta: MutableMap<String, String> = mutableMapOf()
     fun limpiar() {
         nombreEvento = ""
         fechaDesde = ""
         fechaHasta = ""
-        cantidadesVenta.clear()
+        cantidadesVenta =
+            mutableMapOf<String, String>()
     }
 }

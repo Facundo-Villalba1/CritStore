@@ -5,8 +5,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
-
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun PantallaVentas(
@@ -14,38 +15,120 @@ fun PantallaVentas(
     generarPlanilla: () -> Unit,
     reporteVentas: () -> Unit
 ) {
+    val configuracion = LocalConfiguration.current
+    val anchoPantalla =
+        configuracion.screenWidthDp
+    val esTablet =
+        anchoPantalla >= 600
+    val paddingPantalla =
+        if (esTablet)
+            60.dp
+        else
+            30.dp
+    val tamañoTitulo =
+        if (esTablet)
+            36.sp
+        else
+            28.sp
+    val tamañoTexto =
+        if (esTablet)
+            22.sp
+        else
+            16.sp
+    val anchoBotones =
+        if (esTablet)
+            450.dp
+        else
+            320.dp
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(30.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(paddingPantalla),
+        horizontalAlignment =
+            Alignment.CenterHorizontally,
+        verticalArrangement =
+            Arrangement.Center
     ) {
         Text(
             text = "Ventas",
-            style = MaterialTheme.typography.headlineLarge
+            fontSize = tamañoTitulo,
+            style =
+                MaterialTheme.typography.headlineLarge
+        )
+        Spacer(
+            modifier = Modifier.height(
+                if(esTablet)
+                    40.dp
+                else
+                    25.dp
+            )
         )
         Button(
             onClick = generarPlanilla,
             modifier = Modifier
-                .padding(10.dp)
+                .widthIn(
+                    max = anchoBotones
+                )
                 .fillMaxWidth()
+                .height(
+                    if(esTablet)
+                        65.dp
+                    else
+                        55.dp
+                )
+                .padding(vertical = 5.dp)
         ) {
-            Text("📝 Generar Nueva Planilla")
+            Text(
+                text = "📝 Generar Nueva Planilla",
+                fontSize = tamañoTexto
+            )
         }
         Button(
             onClick = reporteVentas,
             modifier = Modifier
-                .padding(10.dp)
+                .widthIn(
+                    max = anchoBotones
+                )
                 .fillMaxWidth()
+                .height(
+                    if(esTablet)
+                        65.dp
+                    else
+                        55.dp
+                )
+                .padding(vertical = 5.dp)
         ) {
-            Text("📊 Reporte de Ventas")
+            Text(
+                text = "📊 Reporte de Ventas",
+                fontSize = tamañoTexto
+            )
         }
+        Spacer(
+            modifier = Modifier.height(
+                if(esTablet)
+                    20.dp
+                else
+                    10.dp
+            )
+        )
         Button(
             onClick = volver,
-            modifier = Modifier.padding(10.dp)
+            modifier = Modifier
+                .widthIn(
+                    max = anchoBotones
+                )
+                .fillMaxWidth()
+                .height(
+                    if(esTablet)
+                        65.dp
+                    else
+                        55.dp
+                )
         ) {
-            Text("⬅ Volver")
+            Text(
+                text = "⬅ Volver",
+                fontSize = tamañoTexto
+            )
         }
     }
 }

@@ -1,39 +1,44 @@
 package com.example.critstore
-import android.content.ContentValues
-import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Paint
-import android.graphics.pdf.PdfDocument
-import android.os.Environment
-import android.provider.MediaStore
+
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+
 @Composable
 fun ActualizarStock(
     productoDao: ProductoDao,
     volver: () -> Unit
 ) {
+    val configuracion = LocalConfiguration.current
+    val esTablet =
+        configuracion.screenWidthDp >= 600
+    val padding =
+        if (esTablet) 32.dp else 16.dp
+    val tamañoTitulo =
+        if (esTablet) 32.sp else 24.sp
+    val tamañoTexto =
+        if (esTablet) 20.sp else 16.sp
     var productos by remember {
         mutableStateOf(emptyList<Producto>())
     }
     var cantidades by rememberSaveable {
         mutableStateOf(
-            mutableMapOf<Int, String>()
+            mutableMapOf<String,String>()
         )
     }
     var cargado by remember {
@@ -45,13 +50,14 @@ fun ActualizarStock(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     LaunchedEffect(Unit) {
-        productos = productoDao.obtenerProductos()
-        if (!cargado) {
+        productos =
+            productoDao.obtenerProductos()
+        if(!cargado){
             productos.forEach { producto ->
                 cantidades =
                     cantidades.toMutableMap().apply {
                         put(
-                            producto.id,
+                            producto.uuid,
                             producto.Cantidad.toString()
                         )
                     }
@@ -62,84 +68,122 @@ fun ActualizarStock(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-    ) {
+            .padding(padding)
+    ){
         Text(
             text = "Actualizar Stock",
-            style = MaterialTheme.typography.headlineMedium
+            fontSize = tamañoTitulo,
+            style =
+                MaterialTheme.typography.headlineMedium
         )
         Spacer(
-            modifier = Modifier.height(20.dp)
+            Modifier.height(20.dp)
         )
         Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
+            modifier =
+                Modifier.fillMaxWidth()
+        ){
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(10.dp)
-            ) {
+                    .padding(12.dp),
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ){
                 Text(
-                    "Producto",
-                    modifier = Modifier.weight(2f)
+                    text = "Producto",
+                    fontSize = tamañoTexto,
+                    modifier =
+                        Modifier.weight(1f)
                 )
                 Text(
-                    "Stock",
-                    modifier = Modifier.weight(1f)
+                    text = "Stock",
+                    fontSize = tamañoTexto,
+                    modifier =
+                        Modifier.width(80.dp),
+                    textAlign =
+                        TextAlign.Center
                 )
-                Text("")
+                Spacer(
+                    Modifier.width(50.dp)
+                )
             }
         }
         Spacer(
-            modifier = Modifier.height(8.dp)
+            Modifier.height(8.dp)
         )
         LazyColumn(
-            modifier = Modifier.weight(1f)
-        ) {
-            items(productos) { producto ->
+            modifier =
+                Modifier.weight(1f)
+        ){
+            items(productos){ producto ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp)
-                ) {
+                ){
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(10.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
                         verticalAlignment =
-                            androidx.compose.ui.Alignment.CenterVertically
-                    ) {
+                            Alignment.CenterVertically
+                    ){
                         Text(
-                            producto.Nombre,
-                            modifier = Modifier.weight(2f)
+                            text = producto.Nombre,
+                            fontSize = tamañoTexto,
+                            maxLines = 1,
+                            modifier =
+                                Modifier.weight(1f)
                         )
-                        OutlinedTextField(
-                            value =
-                                cantidades[producto.id] ?: "",
-                            onValueChange = { nuevoValor ->
-                                cantidades =
-                                    cantidades.toMutableMap().apply {
-                                        put(
-                                            producto.id,
-                                            nuevoValor
-                                        )
-                                    }
-                            },
+                        Box(
                             modifier = Modifier
-                                .width(70.dp)
-                                .height(45.dp),
-                            singleLine = true
-                        )
+                                .width(80.dp)
+                                .height(40.dp),
+                            contentAlignment =
+                                Alignment.Center
+                        ){
+                            BasicTextField(
+                                value =
+                                    cantidades[producto.uuid]
+                                        ?: "",
+                                onValueChange = { valor ->
+                                    cantidades =
+                                        cantidades
+                                            .toMutableMap()
+                                            .apply {
+                                                put(
+                                                    producto.uuid,
+                                                    valor.filter {
+                                                        it.isDigit()
+                                                    }
+                                                )
+                                            }
+                                },
+                                singleLine = true,
+                                textStyle =
+                                    LocalTextStyle.current.copy(
+                                        textAlign =
+                                            TextAlign.Center,
+                                        fontSize =
+                                            16.sp
+                                    ),
+                                modifier =
+                                    Modifier.fillMaxSize()
+                            )
+                        }
                         IconButton(
                             onClick = {
-                                productoEliminar = producto
+                                productoEliminar =
+                                    producto
                             }
-                        ) {
+                        ){
                             Icon(
                                 imageVector =
                                     Icons.Default.Delete,
                                 contentDescription =
-                                    "Eliminar producto"
+                                    "Eliminar"
                             )
                         }
                     }
@@ -149,35 +193,47 @@ fun ActualizarStock(
         Button(
             onClick = {
                 scope.launch {
-                    cantidades.forEach { (id, cantidad) ->
-                        if (cantidad.isNotEmpty()) {
-                            productoDao.actualizarCantidad(
-                                id,
-                                cantidad.toInt()
-                            )
-                        }
+                    cantidades.forEach { (uuid, cantidad) ->
+                        val nuevaCantidad =
+                            cantidad.toIntOrNull() ?: 0
+                        productoDao.actualizarCantidad(
+                            uuid,
+                            nuevaCantidad
+                        )
+                        actualizarStockGoogle(
+                            uuid,
+                            nuevaCantidad
+                        )
                     }
                     productos =
                         productoDao.obtenerProductos()
                     Toast.makeText(
                         context,
-                        "Stock actualizado correctamente",
-                        Toast.LENGTH_SHORT
+                        "✅ Stock guardado y actualizado correctamente",
+                        Toast.LENGTH_LONG
                     ).show()
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(55.dp)
         ) {
-            Text("💾 Guardar Cambios")
+            Text(
+                text = "💾 Guardar Cambios",
+                fontSize = 18.sp
+            )
         }
         Spacer(
-            modifier = Modifier.height(10.dp)
+            Modifier.height(8.dp)
         )
-        Button(
+        OutlinedButton(
             onClick = volver,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("⬅ Volver")
+            modifier =
+                Modifier.fillMaxWidth()
+        ){
+            Text(
+                "⬅ Volver"
+            )
         }
     }
     productoEliminar?.let { producto ->
@@ -186,18 +242,25 @@ fun ActualizarStock(
                 productoEliminar = null
             },
             title = {
-                Text("Eliminar producto")
+                Text(
+                    "Eliminar producto"
+                )
             },
             text = {
                 Text(
-                    "¿Desea eliminar ${producto.Nombre}?"
+                    "¿Eliminar ${producto.Nombre}?"
                 )
             },
             confirmButton = {
                 Button(
                     onClick = {
                         scope.launch {
-                            productoDao.eliminarProducto(producto)
+                            productoDao.eliminarProducto(
+                                producto
+                            )
+                            eliminarProductoGoogle(
+                                producto.uuid
+                            )
                             productos =
                                 productoDao.obtenerProductos()
                             productoEliminar = null
@@ -208,7 +271,7 @@ fun ActualizarStock(
                             ).show()
                         }
                     }
-                ) {
+                ){
                     Text("Eliminar")
                 }
             },
@@ -217,7 +280,7 @@ fun ActualizarStock(
                     onClick = {
                         productoEliminar = null
                     }
-                ) {
+                ){
                     Text("Cancelar")
                 }
             }

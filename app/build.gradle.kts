@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.example.critstore"
+
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
         }
     }
-
     defaultConfig {
         applicationId = "com.example.critstore"
         minSdk = 24
@@ -27,6 +27,11 @@ android {
             optimization {
                 enable = false
             }
+        }
+    }
+    packaging {
+        resources {
+            excludes += "/META-INF/DEPENDENCIES"
         }
     }
     compileOptions {
@@ -48,6 +53,9 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation("androidx.compose.material:material-icons-extended")
+    implementation("com.google.api-client:google-api-client-android:2.2.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("androidx.compose.material3:material3-window-size-class:1.2.1")
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
@@ -58,5 +66,4 @@ dependencies {
     implementation("androidx.room:room-runtime:2.7.2")
     implementation("androidx.room:room-ktx:2.7.2")
     ksp("androidx.room:room-compiler:2.7.2")
-
 }

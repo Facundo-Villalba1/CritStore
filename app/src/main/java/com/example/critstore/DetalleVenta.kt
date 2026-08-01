@@ -2,7 +2,6 @@ package com.example.critstore
 
 import android.content.ContentValues
 import android.content.Context
-import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.os.Environment
@@ -13,30 +12,37 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.RectF
+
 
 @Composable
 fun DetalleVenta(
     planillaId: Int,
     planillaDao: PlanillaDao,
     planilla: PlanillaVenta,
-    volver: () -> Unit
-) {
+    volver: () -> Unit,
+    editarPlanilla: (PlanillaVenta) -> Unit
+)
+ {
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var detalles by remember {
-        mutableStateOf(emptyList<DetallePlanilla>())
+        mutableStateOf<List<DetallePlanilla>>(emptyList())
     }
     LaunchedEffect(planillaId) {
-        detalles = planillaDao.obtenerDetallePlanilla(planillaId)
-    }
-    val totalGeneral = detalles.sumOf {
-        it.total
+        detalles = planillaDao.obtenerDetallePlanilla(
+            planillaId
+        )
     }
     Column(
         modifier = Modifier
@@ -45,70 +51,116 @@ fun DetalleVenta(
     ) {
         Text(
             text = "Detalle de Venta",
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineSmall
         )
         Spacer(
-            modifier = Modifier.height(15.dp)
+            modifier = Modifier.height(10.dp)
         )
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp)
-            ) {
-                Text(
-                    "Producto",
-                    modifier = Modifier.weight(2f)
-                )
-                Text(
-                    "Cant.",
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    "Total",
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
+        Text(
+            text = "Evento: ${planilla.NombreEvento}",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Text(
+            text = "Fecha: ${planilla.FechaDesde}",
+        )
+        Spacer(
+            modifier = Modifier.height(20.dp)
+        )
         LazyColumn(
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .weight(1f)
         ) {
-            items(detalles) { detalle ->
-                Card(
+            item {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
+                        .padding(vertical = 8.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(10.dp)
-                    ) {
-                        Text(
-                            detalle.Nombre,
-                            modifier = Modifier.weight(2f)
-                        )
-                        Text(
-                            detalle.Ventas.toString(),
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            "$${detalle.total}",
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    Text(
+                        "Producto",
+                        modifier = Modifier.weight(2f)
+                    )
+                    Text(
+                        "Precio",
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        "Cant.",
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        "Total",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+            items(detalles) { detalle ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
+                ) {
+                    Text(
+                        detalle.Nombre,
+                        modifier = Modifier.weight(2f)
+                    )
+                    Text(
+                        "$${detalle.Precio}",
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        detalle.Ventas.toString(),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        "$${detalle.Total}",
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
-        Card(
+        val totalVenta =
+            detalles.sumOf {
+                it.Total
+            }
+        Text(
+            text = "TOTAL: $$totalVenta",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier
+                .align(Alignment.End)
+                .padding(8.dp)
+        )
+        Spacer(
+            modifier = Modifier.height(10.dp)
+        )
+        Button(
+            onClick = {
+                editarPlanilla(planilla)
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("✏️ Modificar Venta")
+        }
+        Button(
+            onClick = {
+                scope.launch {
+                    detalles.forEach { detalle ->
+                        sincronizarDetalle(
+                            detalle,
+                            planilla
+                        )
+                    }
+                    Toast.makeText(
+                        context,
+                        "✅ Venta sincronizada correctamente",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                "TOTAL VENTA: $${totalGeneral}",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(15.dp)
+                "🔄 Sincronizar Venta"
             )
         }
         Spacer(
@@ -116,27 +168,36 @@ fun DetalleVenta(
         )
         Button(
             onClick = {
+                val totalVenta =
+                    detalles.sumOf {
+                        it.Total
+                    }
                 generarPDF(
-                    context,
-                    detalles,
-                    totalGeneral,
-                    planilla.nombreEvento,
-                    planilla.fechaDesde,
-                    planilla.fechaHasta
+                    context = context,
+                    detalles = detalles,
+                    total = totalVenta,
+                    nombreEvento = planilla.NombreEvento,
+                    fechaDesde = planilla.FechaDesde,
+                    fechaHasta = planilla.FechaHasta
                 )
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
         ) {
-            Text("📄 Generar PDF")
+            Text(
+                "📄 Generar PDF"
+            )
         }
-        Spacer(
-            modifier = Modifier.height(10.dp)
-        )
         Button(
-            onClick = volver,
-            modifier = Modifier.fillMaxWidth()
+            onClick = {
+                volver()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
         ) {
-            Text("⬅ Volver")
+            Text(
+                "Volver"
+            )
         }
     }
 }
@@ -149,243 +210,273 @@ fun generarPDF(
     fechaHasta: String
 ) {
     val documento = PdfDocument()
-    val pagina = documento.startPage(
-        PdfDocument.PageInfo.Builder(
-            595,
-            842,
-            1
-        ).create()
-    )
-    val canvas = pagina.canvas
+    val ancho = 595
+    val alto = 842
+    var paginaNumero = 1
+    var pagina =
+        documento.startPage(
+            PdfDocument.PageInfo.Builder(
+                ancho,
+                alto,
+                paginaNumero
+            ).create()
+        )
+    var canvas = pagina.canvas
     val paint = Paint()
-    var y = 50f
-    // TITULO
-    paint.style = Paint.Style.FILL
-    paint.textSize = 24f
-    paint.isFakeBoldText = true
-    canvas.drawText(
-        "CritStore",
-        40f,
-        y,
-        paint
-    )
-    y += 35
-    paint.textSize = 18f
-    canvas.drawText(
-        "Detalle de Venta",
-        40f,
-        y,
-        paint
-    )
-    y += 35
-    // DATOS EVENTO
-    paint.textSize = 14f
-    paint.isFakeBoldText = false
-    canvas.drawText(
-        "Evento: $nombreEvento",
-        40f,
-        y,
-        paint
-    )
-    y += 25
-    canvas.drawText(
-        "Fecha Desde: $fechaDesde",
-        40f,
-        y,
-        paint
-    )
-    y += 25
-    canvas.drawText(
-        "Fecha Hasta: $fechaHasta",
-        40f,
-        y,
-        paint
-    )
-    y += 30
-    val fechaGeneracion =
-        SimpleDateFormat(
-            "dd/MM/yyyy HH:mm",
-            Locale.getDefault()
-        ).format(Date())
-    paint.textSize = 11f
-    canvas.drawText(
-        "Generado: $fechaGeneracion",
-        40f,
-        y,
-        paint
-    )
-    y += 35
-    // CONFIGURACION TABLA
-    val inicioX = 40f
-    val anchoProducto = 260f
-    val anchoCantidad = 100f
-    val anchoTotal = 120f
-    val altoFila = 30f
-    val anchoTabla =
-        anchoProducto + anchoCantidad + anchoTotal
-    // CABECERA TABLA
-    paint.style = Paint.Style.STROKE
-    paint.strokeWidth = 1f
-    canvas.drawRect(
-        inicioX,
-        y,
-        inicioX + anchoTabla,
-        y + altoFila,
-        paint
-    )
-    canvas.drawLine(
-        inicioX + anchoProducto,
-        y,
-        inicioX + anchoProducto,
-        y + altoFila,
-        paint
-    )
-    canvas.drawLine(
-        inicioX + anchoProducto + anchoCantidad,
-        y,
-        inicioX + anchoProducto + anchoCantidad,
-        y + altoFila,
-        paint
-    )
-    paint.style = Paint.Style.FILL
-    paint.textSize = 13f
-    paint.isFakeBoldText = true
-    canvas.drawText(
-        "Producto",
-        inicioX + 10,
-        y + 20,
-        paint
-    )
-    canvas.drawText(
-        "Cantidad",
-        inicioX + anchoProducto + 15,
-        y + 20,
-        paint
-    )
-    canvas.drawText(
-        "Total",
-        inicioX + anchoProducto + anchoCantidad + 25,
-        y + 20,
-        paint
-    )
-    y += altoFila
-    // DETALLE TABLA
-    paint.textSize = 12f
-    paint.isFakeBoldText = false
-    detalles.forEach { detalle ->
+    fun dibujarEncabezado() {
+        paint.style = Paint.Style.FILL
+        try {
+            val bitmap =
+                BitmapFactory.decodeResource(
+                    context.resources,
+                    R.drawable.logo_critstore
+                )
+            val logo =
+                Bitmap.createScaledBitmap(
+                    bitmap,
+                    70,
+                    70,
+                    true
+                )
+            canvas.drawBitmap(
+                logo,
+                null,
+                RectF(
+                    480f,
+                    20f,
+                    550f,
+                    90f
+                ),
+                paint
+            )
+        } catch(e: Exception){
+        }
+        paint.textSize = 24f
+        paint.isFakeBoldText = true
+        canvas.drawText(
+            "CritStore",
+            40f,
+            50f,
+            paint
+        )
+        paint.textSize = 16f
+        canvas.drawText(
+            "Detalle de Venta",
+            40f,
+            80f,
+            paint
+        )
+        paint.textSize = 12f
+        paint.isFakeBoldText = false
+        canvas.drawText(
+            "Evento: $nombreEvento",
+            40f,
+            115f,
+            paint
+        )
+        canvas.drawText(
+            "Desde: $fechaDesde",
+            40f,
+            135f,
+            paint
+        )
+        canvas.drawText(
+            "Hasta: $fechaHasta",
+            40f,
+            155f,
+            paint
+        )
+    }
+    fun dibujarTabla(
+        yInicial: Float
+    ): Float {
+        var y = yInicial
+        val xInicio = 40f
+        val xFin = 555f
+        val columnaProducto = 50f
+        val columnaCantidad = 360f
+        val columnaTotal = 470f
         paint.style = Paint.Style.STROKE
         canvas.drawRect(
-            inicioX,
+            xInicio,
             y,
-            inicioX + anchoTabla,
-            y + altoFila,
+            xFin,
+            y + 30,
             paint
         )
         canvas.drawLine(
-            inicioX + anchoProducto,
+            340f,
             y,
-            inicioX + anchoProducto,
-            y + altoFila,
+            340f,
+            y + 30,
             paint
         )
         canvas.drawLine(
-            inicioX + anchoProducto + anchoCantidad,
+            440f,
             y,
-            inicioX + anchoProducto + anchoCantidad,
-            y + altoFila,
+            440f,
+            y + 30,
             paint
         )
         paint.style = Paint.Style.FILL
+        paint.textSize = 12f
+        paint.isFakeBoldText = true
         canvas.drawText(
-            detalle.Nombre,
-            inicioX + 10,
+            "Producto",
+            columnaProducto,
             y + 20,
             paint
         )
         canvas.drawText(
-            detalle.Ventas.toString(),
-            inicioX + anchoProducto + 35,
+            "Cantidad",
+            columnaCantidad,
             y + 20,
             paint
         )
         canvas.drawText(
-            "$${detalle.total}",
-            inicioX + anchoProducto + anchoCantidad + 25,
+            "Total",
+            columnaTotal,
             y + 20,
             paint
         )
-        y += altoFila
+        y += 30
+        paint.isFakeBoldText = false
+        detalles.forEach { detalle ->
+            if(y > 760){
+                documento.finishPage(
+                    pagina
+                )
+                paginaNumero++
+                pagina =
+                    documento.startPage(
+                        PdfDocument.PageInfo.Builder(
+                            ancho,
+                            alto,
+                            paginaNumero
+                        ).create()
+                    )
+                canvas =
+                    pagina.canvas
+                dibujarEncabezado()
+                y = 190f
+            }
+            paint.style =
+                Paint.Style.STROKE
+            canvas.drawRect(
+                xInicio,
+                y,
+                xFin,
+                y + 25,
+                paint
+            )
+            canvas.drawLine(
+                340f,
+                y,
+                340f,
+                y + 25,
+                paint
+            )
+            canvas.drawLine(
+                440f,
+                y,
+                440f,
+                y + 25,
+                paint
+            )
+            paint.style =
+                Paint.Style.FILL
+            paint.textSize = 11f
+            val nombre =
+                if(detalle.Nombre.length > 35)
+                    detalle.Nombre.substring(
+                        0,
+                        35
+                    ) + "..."
+                else
+                    detalle.Nombre
+            canvas.drawText(
+                nombre,
+                columnaProducto,
+                y + 17,
+                paint
+            )
+            canvas.drawText(
+                detalle.Ventas.toString(),
+                columnaCantidad,
+                y + 17,
+                paint
+            )
+            canvas.drawText(
+                "$${detalle.Total}",
+                columnaTotal,
+                y + 17,
+                paint
+            )
+            y += 25
+        }
+        return y
     }
-    y += 25
-    // TOTAL VENTA
-    paint.style = Paint.Style.STROKE
-    canvas.drawRect(
-        300f,
-        y,
-        550f,
-        y + 35,
-        paint
-    )
-    paint.style = Paint.Style.FILL
-    paint.textSize = 16f
+    dibujarEncabezado()
+    val yFinal =
+        dibujarTabla(
+            190f
+        )
+    paint.textSize = 18f
     paint.isFakeBoldText = true
     canvas.drawText(
-        "TOTAL VENTA: $${total}",
-        315f,
-        y + 23,
+        "TOTAL VENTA: $$total",
+        40f,
+        yFinal + 40,
         paint
     )
-    // LOGO PIE
-    val logo = BitmapFactory.decodeResource(
-        context.resources,
-        R.drawable.logo_critstore
+    documento.finishPage(
+        pagina
     )
-    val logoReducido = Bitmap.createScaledBitmap(
-        logo,
-        90,
-        90,
-        true
-    )
-    val posicionX =
-        (595 - logoReducido.width) / 2f
-    canvas.drawBitmap(
-        logoReducido,
-        posicionX,
-        700f,
-        paint
-    )
-    documento.finishPage(pagina)
-    // GUARDAR PDF
-    val nombreArchivo =
-        "${nombreEvento}_${fechaDesde}_${fechaHasta}.pdf"
+    val fecha =
+        SimpleDateFormat(
+            "dd-MM-yyyy",
+            Locale.getDefault()
+        ).format(Date())
+    val eventoLimpio =
+        nombreEvento
             .replace(
-                "/",
-                "-"
+                "[^a-zA-Z0-9 ]".toRegex(),
+                ""
             )
-    val valores = ContentValues().apply {
-        put(
-            MediaStore.MediaColumns.DISPLAY_NAME,
-            nombreArchivo
-        )
-        put(
-            MediaStore.MediaColumns.MIME_TYPE,
-            "application/pdf"
-        )
-        put(
-            MediaStore.MediaColumns.RELATIVE_PATH,
-            Environment.DIRECTORY_DOWNLOADS
-        )
-    }
+            .replace(
+                " ",
+                "_"
+            )
+    val nombreArchivo =
+        "Venta_${eventoLimpio}_${fecha}.pdf"
+    val valores =
+        ContentValues().apply {
+            put(
+                MediaStore.MediaColumns.DISPLAY_NAME,
+                nombreArchivo
+            )
+            put(
+                MediaStore.MediaColumns.MIME_TYPE,
+                "application/pdf"
+            )
+            put(
+                MediaStore.MediaColumns.RELATIVE_PATH,
+                Environment.DIRECTORY_DOWNLOADS
+            )
+        }
     try {
-        val uri = context.contentResolver.insert(
-            MediaStore.Downloads.EXTERNAL_CONTENT_URI,
-            valores
-        )
+        val uri =
+            context.contentResolver.insert(
+                MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                valores
+            )
         uri?.let {
             context.contentResolver
                 .openOutputStream(it)
-                .use { salida ->
-                    documento.writeTo(salida)
+                ?.use { salida ->
+                    documento.writeTo(
+                        salida
+                    )
                 }
         }
         Toast.makeText(
@@ -393,10 +484,10 @@ fun generarPDF(
             "PDF guardado: $nombreArchivo",
             Toast.LENGTH_LONG
         ).show()
-    } catch (e: Exception) {
+    } catch(e: Exception){
         Toast.makeText(
             context,
-            "Error generando PDF: ${e.message}",
+            "Error PDF: ${e.message}",
             Toast.LENGTH_LONG
         ).show()
     }

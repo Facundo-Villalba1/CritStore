@@ -3,6 +3,7 @@ package com.example.critstore
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 
 @Dao
 interface PlanillaDao {
@@ -25,4 +26,18 @@ interface PlanillaDao {
     suspend fun obtenerDetallePlanilla(
         id: Int
     ): List<DetallePlanilla>
+    @Update
+    suspend fun actualizarPlanilla(
+        planilla: PlanillaVenta
+    )
+    @Update
+    suspend fun actualizarDetalle(
+        detalle: DetallePlanilla
+    )
+    @Query(
+        "DELETE FROM detalle_planillas WHERE idPlanilla = :id"
+    )
+    suspend fun eliminarDetallesPlanilla(
+        id: Int
+    )
 }

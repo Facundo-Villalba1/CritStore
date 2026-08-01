@@ -1,11 +1,5 @@
 package com.example.critstore
 
-import android.content.ContentValues
-import android.content.Context
-import android.graphics.Paint
-import android.graphics.pdf.PdfDocument
-import android.os.Environment
-import android.provider.MediaStore
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,55 +7,149 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
+import android.content.ContentValues
+import android.content.Context
+import android.graphics.Paint
+import android.graphics.pdf.PdfDocument
+import android.os.Environment
+import android.provider.MediaStore
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.RectF
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VerProductos(
     productoDao: ProductoDao,
-    volver: () -> Unit,
-    generarPDF: (List<Producto>) -> Unit
+    volver: () -> Unit
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val configuration = LocalConfiguration.current
+    val esTablet =
+        configuration.screenWidthDp >= 600
     var productos by remember {
-        mutableStateOf(emptyList<Producto>())
+        mutableStateOf(
+            emptyList<Producto>()
+        )
+    }
+    var tipos by remember {
+        mutableStateOf(
+            listOf("Todos")
+        )
     }
     var tipoSeleccionado by remember {
         mutableStateOf("Todos")
     }
-    var tipos by remember {
-        mutableStateOf(listOf("Todos"))
-    }
     var expandido by remember {
         mutableStateOf(false)
     }
+    var sincronizando by remember {
+        mutableStateOf(false)
+    }
+    suspend fun cargarProductos() {
+        productos =
+            productoDao.obtenerProductos()
+        tipos =
+            listOf("Todos") +
+                    productos
+                        .map {
+                            it.Tipo.trim()
+                        }
+                        .distinct()
+    }
+    suspend fun cargarDesdeGoogle() {
+        try {
+            val listaGoogle =
+                obtenerProductosGoogle()
+            listaGoogle.forEach { producto ->
+                productoDao.insertarProducto(
+                    producto
+                )
+            }
+            cargarProductos()
+        } catch (e: Exception) {
+            Toast.makeText(
+                context,
+                "Error cargando Google: ${e.message}",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+    suspend fun sincronizarGoogle() {
+        try {
+            sincronizando = true
+            val lista =
+                productoDao.obtenerProductos()
+            lista.forEach { producto ->
+                sincronizarProducto(
+                    producto
+                )
+            }
+            Toast.makeText(
+                context,
+                "Productos enviados a Google",
+                Toast.LENGTH_LONG
+            ).show()
+        } catch (e: Exception) {
+            Toast.makeText(
+                context,
+                "Error enviando Google: ${e.message}",
+                Toast.LENGTH_LONG
+            ).show()
+        } finally {
+            sincronizando = false
+        }
+    }
+    LaunchedEffect(Unit) {
+        cargarDesdeGoogle()
+    }
     val productosFiltrados =
-        if (tipoSeleccionado == "Todos") {
+        if (
+            tipoSeleccionado == "Todos"
+        ) {
             productos
         } else {
             productos.filter {
-                it.Tipo.trim() == tipoSeleccionado.trim()
+                it.Tipo.trim() ==
+                        tipoSeleccionado.trim()
             }
         }
-    LaunchedEffect(Unit) {
-        productos = productoDao.obtenerProductos()
-        tipos = listOf("Todos") + productoDao.obtenerTipos()
-    }
+    val anchoProducto =
+        if (esTablet)
+            3f
+        else
+            2f
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(
+                if (esTablet)
+                    32.dp
+                else
+                    16.dp
+            )
     ) {
         Text(
             text = "Ver Productos",
-            style = MaterialTheme.typography.headlineMedium
+            style =
+                if (esTablet)
+                    MaterialTheme.typography.headlineLarge
+                else
+                    MaterialTheme.typography.headlineMedium
         )
         Spacer(
-            modifier = Modifier.height(20.dp)
+            modifier =
+                Modifier.height(16.dp)
         )
         ExposedDropdownMenuBox(
             expanded = expandido,
@@ -74,11 +162,13 @@ fun VerProductos(
                 onValueChange = {},
                 readOnly = true,
                 label = {
-                    Text("Filtrar por tipo")
+                    Text(
+                        "Filtrar por tipo"
+                    )
                 },
                 modifier = Modifier
-                    .menuAnchor()
                     .fillMaxWidth()
+                    .menuAnchor()
             )
             ExposedDropdownMenu(
                 expanded = expandido,
@@ -89,10 +179,13 @@ fun VerProductos(
                 tipos.forEach { tipo ->
                     DropdownMenuItem(
                         text = {
-                            Text(tipo)
+                            Text(
+                                tipo
+                            )
                         },
                         onClick = {
-                            tipoSeleccionado = tipo
+                            tipoSeleccionado =
+                                tipo
                             expandido = false
                         }
                     )
@@ -100,79 +193,201 @@ fun VerProductos(
             }
         }
         Spacer(
-            modifier = Modifier.height(20.dp)
+            modifier = Modifier.height(16.dp)
         )
         Card(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(10.dp)
+                    .padding(
+                        if(esTablet)
+                            14.dp
+                        else
+                            10.dp
+                    )
             ) {
                 Text(
                     text = "Producto",
-                    modifier = Modifier.weight(2f)
+                    modifier =
+                        Modifier.weight(
+                            anchoProducto
+                        ),
+                    fontSize =
+                        if(esTablet)
+                            16.sp
+                        else
+                            13.sp
                 )
                 Text(
                     text = "Stock",
-                    modifier = Modifier.weight(1f)
+                    modifier =
+                        Modifier.weight(1f),
+                    fontSize =
+                        if(esTablet)
+                            16.sp
+                        else
+                            13.sp
                 )
                 Text(
                     text = "Precio",
-                    modifier = Modifier.weight(1f)
+                    modifier =
+                        Modifier.weight(1f),
+                    fontSize =
+                        if(esTablet)
+                            16.sp
+                        else
+                            13.sp
                 )
             }
         }
         Spacer(
-            modifier = Modifier.height(8.dp)
+            modifier = Modifier.height(6.dp)
         )
         LazyColumn(
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .weight(1f)
         ) {
-            items(productosFiltrados) { producto ->
+            items(
+                productosFiltrados
+            ) { producto ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
+                        .padding(
+                            vertical = 4.dp
+                        )
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(10.dp)
+                            .padding(
+                                if(esTablet)
+                                    14.dp
+                                else
+                                    10.dp
+                            )
                     ) {
                         Text(
-                            text = producto.Nombre,
-                            modifier = Modifier.weight(2f)
+                            text =
+                                producto.Nombre,
+                            modifier =
+                                Modifier.weight(
+                                    anchoProducto
+                                ),
+                            maxLines = 1,
+                            overflow =
+                                TextOverflow.Ellipsis,
+                            fontSize =
+                                if(esTablet)
+                                    16.sp
+                                else
+                                    13.sp
                         )
                         Text(
-                            text = producto.Cantidad.toString(),
-                            modifier = Modifier.weight(1f)
+                            text =
+                                producto.Cantidad
+                                    .toString(),
+                            modifier =
+                                Modifier.weight(1f),
+                            fontSize =
+                                if(esTablet)
+                                    16.sp
+                                else
+                                    13.sp
                         )
                         Text(
-                            text = "$${producto.Precio}",
-                            modifier = Modifier.weight(1f)
+                            text =
+                                "$${producto.Precio}",
+                            modifier =
+                                Modifier.weight(1f),
+                            fontSize =
+                                if(esTablet)
+                                    16.sp
+                                else
+                                    13.sp
                         )
                     }
                 }
             }
         }
-        Button(
-            onClick = {
-                generarPDF(productosFiltrados)
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("📄 Generar PDF")
-        }
         Spacer(
-            modifier = Modifier.height(10.dp)
+            modifier = Modifier.height(12.dp)
         )
         Button(
-            onClick = volver,
-            modifier = Modifier.fillMaxWidth()
+            onClick = {
+                scope.launch {
+                    sincronizarGoogle()
+                }
+            },
+            enabled = !sincronizando,
+            modifier =
+                if(esTablet)
+                    Modifier
+                        .width(350.dp)
+                        .align(
+                            androidx.compose.ui.Alignment.CenterHorizontally
+                        )
+                else
+                    Modifier
+                        .fillMaxWidth()
         ) {
-            Text("⬅ Volver")
+            Text(
+                text =
+                    if(sincronizando)
+                        "☁ Enviando..."
+                    else
+                        "☁ Guardar en Google"
+            )
+        }
+        Spacer(
+            modifier =
+                Modifier.height(10.dp)
+        )
+        Button(
+            onClick = {
+                generarPDFStock(
+                    context,
+                    productosFiltrados
+                )
+            },
+            modifier =
+                if(esTablet)
+                    Modifier
+                        .width(350.dp)
+                        .align(
+                            androidx.compose.ui.Alignment.CenterHorizontally
+                        )
+                else
+                    Modifier
+                        .fillMaxWidth()
+        ) {
+            Text(
+                "📄 Generar PDF Stock"
+            )
+        }
+        Spacer(
+            modifier =
+                Modifier.height(10.dp)
+        )
+        OutlinedButton(
+            onClick = volver,
+            modifier =
+                if(esTablet)
+                    Modifier
+                        .width(350.dp)
+                        .align(
+                            androidx.compose.ui.Alignment.CenterHorizontally
+                        )
+                else
+                    Modifier
+                        .fillMaxWidth()
+        ) {
+            Text(
+                "⬅ Volver"
+            )
         }
     }
 }
@@ -180,213 +395,272 @@ fun generarPDFStock(
     context: Context,
     productos: List<Producto>
 ) {
-    val documento = PdfDocument()
-    val pagina = documento.startPage(
-        PdfDocument.PageInfo.Builder(
-            595,
-            842,
-            1
-        ).create()
-    )
-    val canvas = pagina.canvas
+    val documento =
+        PdfDocument()
+    val ancho = 595
+    val alto = 842
+    var numeroPagina = 1
+    var pagina =
+        documento.startPage(
+            PdfDocument.PageInfo.Builder(
+                ancho,
+                alto,
+                numeroPagina
+            ).create()
+        )
+    var canvas = pagina.canvas
     val paint = Paint()
-    var y = 50f
-    // TITULO
-    paint.style = Paint.Style.FILL
-    paint.textSize = 24f
-    paint.isFakeBoldText = true
-    canvas.drawText(
-        "CritStore",
-        40f,
-        y,
-        paint
-    )
-    y += 35
-    paint.textSize = 18f
-    canvas.drawText(
-        "Listado de Stock",
-        40f,
-        y,
-        paint
-    )
-    y += 35
-    // FECHA GENERACION
-    paint.textSize = 11f
-    paint.isFakeBoldText = false
-    val fecha = SimpleDateFormat(
-        "dd/MM/yyyy HH:mm",
-        Locale.getDefault()
-    ).format(Date())
-    canvas.drawText(
-        "Generado: $fecha",
-        40f,
-        y,
-        paint
-    )
-    y += 40
-    // CONFIGURACION TABLA
-    val inicioX = 40f
-    val anchoProducto = 260f
-    val anchoStock = 100f
-    val anchoPrecio = 120f
-    val altoFila = 30f
-    val anchoTabla =
-        anchoProducto + anchoStock + anchoPrecio
-    // CABECERA TABLA
-    paint.style = Paint.Style.STROKE
-    paint.strokeWidth = 1f
-    canvas.drawRect(
-        inicioX,
-        y,
-        inicioX + anchoTabla,
-        y + altoFila,
-        paint
-    )
-    canvas.drawLine(
-        inicioX + anchoProducto,
-        y,
-        inicioX + anchoProducto,
-        y + altoFila,
-        paint
-    )
-    canvas.drawLine(
-        inicioX + anchoProducto + anchoStock,
-        y,
-        inicioX + anchoProducto + anchoStock,
-        y + altoFila,
-        paint
-    )
-    paint.style = Paint.Style.FILL
-    paint.textSize = 13f
-    paint.isFakeBoldText = true
-    canvas.drawText(
-        "Producto",
-        inicioX + 10,
-        y + 20,
-        paint
-    )
-    canvas.drawText(
-        "Stock",
-        inicioX + anchoProducto + 25,
-        y + 20,
-        paint
-    )
-    canvas.drawText(
-        "Precio",
-        inicioX + anchoProducto + anchoStock + 25,
-        y + 20,
-        paint
-    )
-    y += altoFila
-    // DATOS PRODUCTOS
-    paint.textSize = 12f
-    paint.isFakeBoldText = false
-    productos.forEach { producto ->
-        paint.style = Paint.Style.STROKE
-        canvas.drawRect(
-            inicioX,
-            y,
-            inicioX + anchoTabla,
-            y + altoFila,
-            paint
-        )
-        canvas.drawLine(
-            inicioX + anchoProducto,
-            y,
-            inicioX + anchoProducto,
-            y + altoFila,
-            paint
-        )
-        canvas.drawLine(
-            inicioX + anchoProducto + anchoStock,
-            y,
-            inicioX + anchoProducto + anchoStock,
-            y + altoFila,
-            paint
-        )
-        paint.style = Paint.Style.FILL
+    val margen = 40f
+    fun titulo() {
+        paint.style =
+            Paint.Style.FILL
+        try {
+            val bitmap =
+                BitmapFactory.decodeResource(
+                    context.resources,
+                    R.drawable.logo_critstore
+                )
+            val logo =
+                Bitmap.createScaledBitmap(
+                    bitmap,
+                    80,
+                    80,
+                    true
+                )
+            canvas.drawBitmap(
+                logo,
+                null,
+                RectF(
+                    480f,
+                    20f,
+                    550f,
+                    90f
+                ),
+                paint
+            )
+        } catch(e: Exception){
+        }
+        paint.textSize = 22f
+        paint.isFakeBoldText = true
         canvas.drawText(
-            producto.Nombre,
-            inicioX + 10,
+            "Stock CritStore",
+            margen,
+            45f,
+            paint
+        )
+        paint.isFakeBoldText = false
+        paint.textSize = 11f
+        val fecha =
+            SimpleDateFormat(
+                "dd-MM-yyyy HH:mm:ss",
+                Locale.getDefault()
+            ).format(Date())
+        canvas.drawText(
+            "Generado: $fecha",
+            margen,
+            70f,
+            paint
+        )
+    }
+    fun cabecera(
+        y: Float
+    ): Float {
+        paint.style =
+            Paint.Style.STROKE
+        canvas.drawRect(
+            margen,
+            y,
+            555f,
+            y + 30f,
+            paint
+        )
+        canvas.drawLine(
+            220f,
+            y,
+            220f,
+            y + 30f,
+            paint
+        )
+        canvas.drawLine(
+            350f,
+            y,
+            350f,
+            y + 30f,
+            paint
+        )
+        canvas.drawLine(
+            430f,
+            y,
+            430f,
+            y + 30f,
+            paint
+        )
+        paint.style =
+            Paint.Style.FILL
+        paint.textSize = 12f
+        paint.isFakeBoldText = true
+        canvas.drawText(
+            "Producto",
+            50f,
             y + 20,
+            paint
+        )
+        canvas.drawText(
+            "Tipo",
+            240f,
+            y + 20,
+            paint
+        )
+        canvas.drawText(
+            "Stock",
+            370f,
+            y + 20,
+            paint
+        )
+        canvas.drawText(
+            "Precio",
+            470f,
+            y + 20,
+            paint
+        )
+        paint.isFakeBoldText = false
+        return y + 30
+    }
+    fun nuevaPagina(){
+        documento.finishPage(
+            pagina
+        )
+        numeroPagina++
+        pagina =
+            documento.startPage(
+                PdfDocument.PageInfo.Builder(
+                    ancho,
+                    alto,
+                    numeroPagina
+                ).create()
+            )
+        canvas =
+            pagina.canvas
+        titulo()
+    }
+    titulo()
+    var y =
+        cabecera(110f)
+    productos.forEach { producto ->
+        if(y > 760){
+            nuevaPagina()
+            y =
+                cabecera(110f)
+        }
+        paint.style =
+            Paint.Style.STROKE
+        canvas.drawRect(
+            margen,
+            y,
+            555f,
+            y + 25f,
+            paint
+        )
+        canvas.drawLine(
+            220f,
+            y,
+            220f,
+            y + 25f,
+            paint
+        )
+        canvas.drawLine(
+            350f,
+            y,
+            350f,
+            y + 25f,
+            paint
+        )
+        canvas.drawLine(
+            430f,
+            y,
+            430f,
+            y + 25f,
+            paint
+        )
+        paint.style =
+            Paint.Style.FILL
+        paint.textSize = 10f
+        val nombre =
+            if(producto.Nombre.length > 25)
+                producto.Nombre.substring(
+                    0,
+                    25
+                ) + "..."
+            else
+                producto.Nombre
+        canvas.drawText(
+            nombre,
+            50f,
+            y + 17,
+            paint
+        )
+        canvas.drawText(
+            producto.Tipo,
+            240f,
+            y + 17,
             paint
         )
         canvas.drawText(
             producto.Cantidad.toString(),
-            inicioX + anchoProducto + 35,
-            y + 20,
+            370f,
+            y + 17,
             paint
         )
         canvas.drawText(
             "$${producto.Precio}",
-            inicioX + anchoProducto + anchoStock + 25,
-            y + 20,
+            470f,
+            y + 17,
             paint
         )
-        y += altoFila
+        y += 25
     }
-    // LOGO PIE
-    val logo = BitmapFactory.decodeResource(
-        context.resources,
-        R.drawable.logo_critstore
+    documento.finishPage(
+        pagina
     )
-    val logoReducido = Bitmap.createScaledBitmap(
-        logo,
-        90,
-        90,
-        true
-    )
-    val posicionX =
-        (595 - logoReducido.width) / 2f
-    canvas.drawBitmap(
-        logoReducido,
-        posicionX,
-        700f,
-        paint
-    )
-    documento.finishPage(pagina)
-    // NOMBRE ARCHIVO
+    val fechaArchivo =
+        SimpleDateFormat(
+            "dd-MM-yyyy",
+            Locale.getDefault()
+        ).format(Date())
     val nombreArchivo =
-        "Stock_CritStore.pdf"
-    val valores = ContentValues().apply {
-        put(
-            MediaStore.MediaColumns.DISPLAY_NAME,
-            nombreArchivo
-        )
-        put(
-            MediaStore.MediaColumns.MIME_TYPE,
-            "application/pdf"
-        )
-        put(
-            MediaStore.MediaColumns.RELATIVE_PATH,
-            Environment.DIRECTORY_DOWNLOADS
-        )
-    }
-    try {
-        val uri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            context.contentResolver.insert(
-                MediaStore.Downloads.EXTERNAL_CONTENT_URI,
-                valores
+        "Stock_CritStore_$fechaArchivo.pdf"
+    val resolver =
+        context.contentResolver
+    val valores =
+        ContentValues().apply {
+            put(
+                MediaStore.Downloads.DISPLAY_NAME,
+                nombreArchivo
             )
-        } else {
-            null
+            put(
+                MediaStore.Downloads.MIME_TYPE,
+                "application/pdf"
+            )
+            put(
+                MediaStore.Downloads.RELATIVE_PATH,
+                Environment.DIRECTORY_DOWNLOADS
+            )
         }
-        uri?.let {
-            context.contentResolver
-                .openOutputStream(it)
-                .use { salida ->
-                    documento.writeTo(salida)
-                }
-        }
+    val uri =
+        resolver.insert(
+            MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+            valores
+        )
+    uri?.let {
+        resolver.openOutputStream(it)
+            ?.use { salida ->
+                documento.writeTo(
+                    salida
+                )
+            }
         Toast.makeText(
             context,
-            "PDF guardado: $nombreArchivo",
-            Toast.LENGTH_LONG
-        ).show()
-    } catch (e: Exception) {
-        Toast.makeText(
-            context,
-            "Error generando PDF: ${e.message}",
+            "PDF guardado correctamente",
             Toast.LENGTH_LONG
         ).show()
     }

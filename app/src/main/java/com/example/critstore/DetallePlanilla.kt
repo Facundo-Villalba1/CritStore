@@ -9,7 +9,7 @@ data class DetallePlanilla(
     val id: Int = 0,
     val idPlanilla: Int,
     val Nombre: String,
-    val precio: Int,
+    val Precio: Int,
     val Ventas: Int,
-    val total: Int
+    val Total: Int
 )

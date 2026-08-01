@@ -9,7 +9,8 @@ import androidx.room.RoomDatabase
         PlanillaVenta::class,
         DetallePlanilla::class
     ],
-    version = 2
+    version = 2,
+    exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun productoDao(): ProductoDao

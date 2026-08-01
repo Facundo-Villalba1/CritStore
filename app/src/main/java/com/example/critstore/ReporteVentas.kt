@@ -6,7 +6,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+
 
 @Composable
 fun ReporteVentas(
@@ -14,12 +16,16 @@ fun ReporteVentas(
     verDetalle: (PlanillaVenta) -> Unit,
     volver: () -> Unit
 ) {
+    val context = LocalContext.current
     var planillas by remember {
         mutableStateOf(emptyList<PlanillaVenta>())
     }
     LaunchedEffect(Unit) {
         planillas =
             planillaDao.obtenerPlanillas()
+    }
+    var reportes  by remember {
+        mutableStateOf<List<ReporteEvento>>(emptyList())
     }
     Column(
         modifier = Modifier
@@ -46,15 +52,15 @@ fun ReporteVentas(
                         modifier = Modifier.padding(15.dp)
                     ) {
                         Text(
-                            text = planilla.nombreEvento
+                            text = planilla.NombreEvento
                         )
                         Text(
                             text =
-                                "${planilla.fechaDesde} - ${planilla.fechaHasta}"
+                                "${planilla.FechaDesde} - ${planilla.FechaHasta}"
                         )
                         Text(
                             text =
-                                "Total: $${planilla.totalVenta}"
+                                "Total: $${planilla.TotalVenta}"
                         )
                         Button(
                             onClick = {
@@ -68,11 +74,12 @@ fun ReporteVentas(
                 }
             }
         }
-        Button(
+       Button(
             onClick = volver,
             modifier = Modifier.fillMaxWidth()
-        ){
-            Text("⬅ Volver")
-        }
-    }
+        ) {
+           Text("⬅ Volver")
+       }
+   } // cierre correcto del Column
 }
+

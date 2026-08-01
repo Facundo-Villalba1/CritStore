@@ -7,8 +7,8 @@ import androidx.room.PrimaryKey
 data class PlanillaVenta(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
-    val nombreEvento: String,
-    val fechaDesde: String,
-    val fechaHasta: String,
-    val totalVenta: Int
+    val NombreEvento: String,
+    val FechaDesde: String,
+    val FechaHasta: String,
+    val TotalVenta: Int
 )
