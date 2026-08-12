@@ -7,12 +7,14 @@ import androidx.room.RoomDatabase
     entities = [
         Producto::class,
         PlanillaVenta::class,
-        DetallePlanilla::class
+        DetallePlanilla::class,
+        Materiales::class
     ],
-    version = 2,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun productoDao(): ProductoDao
     abstract fun planillaDao(): PlanillaDao
+    abstract fun materialDao(): MaterialDao
 }

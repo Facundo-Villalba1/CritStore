@@ -1,22 +1,17 @@
 package com.example.critstore
 
-import android.app.DatePickerDialog
+import android.app.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
+import androidx.compose.ui.*
+import androidx.compose.ui.platform.*
+import androidx.compose.ui.text.font.*
+import androidx.compose.ui.unit.*
+import kotlinx.coroutines.*
+import java.text.*
+import java.util.*
 
 @Composable
 fun VendidoPorFecha(
@@ -24,12 +19,7 @@ fun VendidoPorFecha(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val configuration = LocalConfiguration.current
-    val esTablet = configuration.screenWidthDp >= 600
-    val padding = if (esTablet) 28.dp else 16.dp
-    val titulo = if (esTablet) 30.sp else 24.sp
-    val texto = if (esTablet) 20.sp else 16.sp
-    val alturaBoton = if (esTablet) 60.dp else 52.dp
+    val dim =obtenerDimensiones()
     var mesSeleccionado by remember {
         mutableStateOf("")
     }
@@ -80,16 +70,17 @@ fun VendidoPorFecha(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(padding)
+            .padding(    top = dim.paddingPantalla * 2,
+                start = dim.paddingPantalla,
+                end = dim.paddingPantalla,
+                bottom = dim.paddingPantalla)
     ) {
         Text(
             text = "📅 Vendido por Mes",
-            fontSize = titulo,
+            fontSize = dim.titulo,
             fontWeight = FontWeight.Bold
         )
-        Spacer(
-            modifier = Modifier.height(20.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
         Button(
             onClick = {
                 seleccionarMes()
@@ -102,12 +93,10 @@ fun VendidoPorFecha(
                         "📅 Seleccionar mes"
                     else
                         "📅 $mesSeleccionado",
-                fontSize = texto
+                fontSize = dim.texto
             )
         }
-        Spacer(
-            modifier = Modifier.height(12.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
         Button(
             onClick = {
                 scope.launch {
@@ -125,12 +114,10 @@ fun VendidoPorFecha(
         ) {
             Text(
                 text = "🔍 Buscar",
-                fontSize = texto
+                fontSize = dim.texto
             )
         }
-        Spacer(
-            modifier = Modifier.height(20.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
         when {
             cargando -> {
                 Box(
@@ -143,12 +130,10 @@ fun VendidoPorFecha(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         CircularProgressIndicator()
-                        Spacer(
-                            modifier = Modifier.height(12.dp)
-                        )
+                        Spacer( modifier = Modifier.height(dim.espacio) )
                         Text(
                             text = "Cargando datos...",
-                            fontSize = texto
+                            fontSize = dim.texto
                         )
                     }
                 }
@@ -166,14 +151,12 @@ fun VendidoPorFecha(
                                 "Seleccione un mes"
                             else
                                 "No hay ventas para ese mes",
-                        fontSize = texto
+                        fontSize = dim.texto
                     )
                 }
             }
             else -> {
-                // Si totalVenta viene repetido por cada producto de la misma planilla,
-                // evita duplicarlo tomando solo valores únicos.
-                val totalMes =
+                  val totalMes =
                     reporte.sumOf { it.totalVenta }
                 Column(
                     modifier = Modifier.weight(1f)
@@ -194,23 +177,19 @@ fun VendidoPorFecha(
                                 ) {
                                     Text(
                                         text = "🎪 ${item.nombreEvento}",
-                                        fontSize = texto,
+                                        fontSize = dim.texto,
                                         fontWeight = FontWeight.Bold
                                     )
-                                    Spacer(
-                                        modifier = Modifier.height(6.dp)
-                                    )
+                                    Spacer( modifier = Modifier.height(dim.espacio) )
                                     Text(
                                         text ="🧾 Total venta: ${item.totalVenta}",
-                                        fontSize = texto
+                                        fontSize = dim.texto
                                     )
                                 }
                             }
                         }
                     }
-                    Spacer(
-                        modifier = Modifier.height(12.dp)
-                    )
+                    Spacer( modifier = Modifier.height(dim.espacio) )
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         elevation = CardDefaults.cardElevation(
@@ -222,15 +201,13 @@ fun VendidoPorFecha(
                         ) {
                             Text(
                                 text = "💰 Total vendido",
-                                fontSize = texto,
+                                fontSize = dim.texto,
                                 fontWeight = FontWeight.Bold
                             )
-                            Spacer(
-                                modifier = Modifier.height(8.dp)
-                            )
+                            Spacer( modifier = Modifier.height(dim.espacio) )
                             Text(
                                 text = "$ $totalMes",
-                                fontSize = if (esTablet) 28.sp else 24.sp,
+                                fontSize = dim.titulo,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -238,19 +215,19 @@ fun VendidoPorFecha(
                 }
             }
         }
-        Spacer(
-            modifier = Modifier.height(8.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
         Button(
             onClick = volver,
-            modifier = Modifier
+            modifier =Modifier
+                .widthIn(dim.alturaBotonInterno)
                 .fillMaxWidth()
-                .height(alturaBoton)
+                .align(Alignment.CenterHorizontally)
         ) {
             Text(
                 text = "⬅ Volver",
-                fontSize = texto
+                fontSize = dim.texto
             )
         }
+        Spacer( modifier = Modifier.height(dim.espacio) )
     }
 }

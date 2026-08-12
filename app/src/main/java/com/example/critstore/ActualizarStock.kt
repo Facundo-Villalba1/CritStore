@@ -1,45 +1,42 @@
 package com.example.critstore
 
-import android.widget.Toast
+import android.widget.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.foundation.lazy.*
+import androidx.compose.material.icons.*
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
+import androidx.compose.runtime.saveable.*
+import androidx.compose.ui.*
+import androidx.compose.ui.platform.*
+import androidx.compose.ui.text.style.*
+import androidx.compose.ui.unit.*
+import kotlinx.coroutines.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActualizarStock(
     productoDao: ProductoDao,
     volver: () -> Unit
 ) {
-    val configuracion = LocalConfiguration.current
-    val esTablet =
-        configuracion.screenWidthDp >= 600
-    val padding =
-        if (esTablet) 32.dp else 16.dp
-    val tamañoTitulo =
-        if (esTablet) 32.sp else 24.sp
-    val tamañoTexto =
-        if (esTablet) 20.sp else 16.sp
+    val dim =obtenerDimensiones()
     var productos by remember {
         mutableStateOf(emptyList<Producto>())
     }
     var cantidades by rememberSaveable {
         mutableStateOf(
-            mutableMapOf<String,String>()
+            mutableMapOf<String, String>()
         )
+    }
+        var tipos by remember {
+        mutableStateOf(listOf<String>())
+    }
+    var tipoSeleccionado by remember {
+        mutableStateOf("Todos")
+    }
+    var menuTipo by remember {
+        mutableStateOf(false)
     }
     var cargado by remember {
         mutableStateOf(false)
@@ -47,12 +44,17 @@ fun ActualizarStock(
     var productoEliminar by remember {
         mutableStateOf<Producto?>(null)
     }
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
+    val scope =
+        rememberCoroutineScope()
+    val context =
+        LocalContext.current
     LaunchedEffect(Unit) {
         productos =
             productoDao.obtenerProductos()
-        if(!cargado){
+        tipos =
+            listOf("Todos") +
+                    productoDao.obtenerTipos()
+        if (!cargado) {
             productos.forEach { producto ->
                 cantidades =
                     cantidades.toMutableMap().apply {
@@ -65,63 +67,118 @@ fun ActualizarStock(
             cargado = true
         }
     }
+    val productosFiltrados =
+        if (tipoSeleccionado == "Todos")
+            productos
+        else
+            productos.filter {
+                it.Tipo == tipoSeleccionado
+            }
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
-    ){
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(   top = dim.paddingPantalla * 2,
+                    start = dim.paddingPantalla,
+                    end = dim.paddingPantalla,
+                    bottom = dim.paddingPantalla)
+    ) {
         Text(
             text = "Actualizar Stock",
-            fontSize = tamañoTitulo,
+            fontSize =dim.titulo,
             style =
                 MaterialTheme.typography.headlineMedium
         )
-        Spacer(
-            Modifier.height(20.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
+        ExposedDropdownMenuBox(
+            expanded = menuTipo,
+            onExpandedChange = {
+                menuTipo = !menuTipo
+            }
+        ) {
+            OutlinedTextField(
+                value =
+                    tipoSeleccionado,
+                onValueChange = {},
+                readOnly = true,
+                label = {
+                    Text(
+                        "Filtrar por tipo"
+                    )
+                },
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(
+                        expanded = menuTipo
+                    )
+                },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .menuAnchor()
+            )
+            ExposedDropdownMenu(
+                expanded = menuTipo,
+                onDismissRequest = {
+                    menuTipo = false
+                },
+                modifier =
+                    Modifier.fillMaxWidth()
+            ) {
+                tipos.forEach { tipo ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(tipo)
+                        },
+                        onClick = {
+                            tipoSeleccionado =
+                                tipo
+                            menuTipo = false
+                        }
+                    )
+                }
+            }
+        }
+        Spacer( modifier = Modifier.height(dim.espacio) )
         Card(
             modifier =
                 Modifier.fillMaxWidth()
-        ){
+        ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
                 verticalAlignment =
                     Alignment.CenterVertically
-            ){
+            ) {
                 Text(
-                    text = "Producto",
-                    fontSize = tamañoTexto,
+                    "Producto",
+                    fontSize = dim.texto,
                     modifier =
                         Modifier.weight(1f)
                 )
                 Text(
-                    text = "Stock",
-                    fontSize = tamañoTexto,
+                    "Stock",
+                    fontSize = dim.texto,
                     modifier =
-                        Modifier.width(80.dp),
+                        Modifier.width(160.dp),
                     textAlign =
                         TextAlign.Center
                 )
-                Spacer(
-                    Modifier.width(50.dp)
-                )
             }
         }
-        Spacer(
-            Modifier.height(8.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
         LazyColumn(
             modifier =
                 Modifier.weight(1f)
-        ){
-            items(productos){ producto ->
+        ) {
+            items(productosFiltrados) { producto ->
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                ){
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                ) {
                     Row(
                         modifier =
                             Modifier
@@ -129,48 +186,75 @@ fun ActualizarStock(
                                 .padding(12.dp),
                         verticalAlignment =
                             Alignment.CenterVertically
-                    ){
-                        Text(
-                            text = producto.Nombre,
-                            fontSize = tamañoTexto,
-                            maxLines = 1,
+                    ) {
+                        Column(
                             modifier =
                                 Modifier.weight(1f)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .width(80.dp)
-                                .height(40.dp),
-                            contentAlignment =
-                                Alignment.Center
-                        ){
-                            BasicTextField(
-                                value =
+                        ) {
+                            Text(
+                                producto.Nombre,
+                                fontSize = dim.texto
+                            )
+                            Text(
+                                producto.Tipo,
+                                fontSize =
+                                    12.sp
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                val actual =
                                     cantidades[producto.uuid]
-                                        ?: "",
-                                onValueChange = { valor ->
+                                        ?.toIntOrNull()
+                                        ?: 0
+                                if (actual > 0) {
                                     cantidades =
-                                        cantidades
-                                            .toMutableMap()
-                                            .apply {
-                                                put(
-                                                    producto.uuid,
-                                                    valor.filter {
-                                                        it.isDigit()
-                                                    }
-                                                )
-                                            }
-                                },
-                                singleLine = true,
-                                textStyle =
-                                    LocalTextStyle.current.copy(
-                                        textAlign =
-                                            TextAlign.Center,
-                                        fontSize =
-                                            16.sp
-                                    ),
-                                modifier =
-                                    Modifier.fillMaxSize()
+                                        cantidades.toMutableMap().apply {
+                                            put(
+                                                producto.uuid,
+                                                (actual - 1)
+                                                    .toString()
+                                            )
+                                        }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                Icons.Default.Remove,
+                                contentDescription =
+                                    "Restar"
+                            )
+                        }
+                        Text(
+                            cantidades[producto.uuid]
+                                ?: "0",
+                            fontSize =
+                                18.sp,
+                            modifier =
+                                Modifier.width(50.dp),
+                            textAlign =
+                                TextAlign.Center
+                        )
+                        IconButton(
+                            onClick = {
+                                val actual =
+                                    cantidades[producto.uuid]
+                                        ?.toIntOrNull()
+                                        ?: 0
+                                cantidades =
+                                    cantidades.toMutableMap().apply {
+                                        put(
+                                            producto.uuid,
+                                            (actual + 1)
+                                                .toString()
+                                        )
+                                    }
+                            }
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription =
+                                    "Sumar"
                             )
                         }
                         IconButton(
@@ -178,10 +262,9 @@ fun ActualizarStock(
                                 productoEliminar =
                                     producto
                             }
-                        ){
+                        ) {
                             Icon(
-                                imageVector =
-                                    Icons.Default.Delete,
+                                Icons.Default.Delete,
                                 contentDescription =
                                     "Eliminar"
                             )
@@ -195,7 +278,8 @@ fun ActualizarStock(
                 scope.launch {
                     cantidades.forEach { (uuid, cantidad) ->
                         val nuevaCantidad =
-                            cantidad.toIntOrNull() ?: 0
+                            cantidad.toIntOrNull()
+                                ?: 0
                         productoDao.actualizarCantidad(
                             uuid,
                             nuevaCantidad
@@ -209,32 +293,35 @@ fun ActualizarStock(
                         productoDao.obtenerProductos()
                     Toast.makeText(
                         context,
-                        "✅ Stock guardado y actualizado correctamente",
+                        "✅ Stock guardado correctamente",
                         Toast.LENGTH_LONG
                     ).show()
                 }
             },
-            modifier = Modifier
+            modifier =Modifier
+                .widthIn(dim.alturaBotonInterno)
                 .fillMaxWidth()
-                .height(55.dp)
+                .align(Alignment.CenterHorizontally)
         ) {
             Text(
-                text = "💾 Guardar Cambios",
-                fontSize = 18.sp
+                "💾 Actualizar",
+                fontSize =dim.texto
             )
         }
-        Spacer(
-            Modifier.height(8.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
         OutlinedButton(
             onClick = volver,
-            modifier =
-                Modifier.fillMaxWidth()
-        ){
+            modifier =Modifier
+                .widthIn(dim.alturaBotonInterno)
+                .fillMaxWidth()
+                .align(Alignment.CenterHorizontally)
+        ) {
             Text(
-                "⬅ Volver"
+                "⬅ Volver",
+                fontSize = dim.texto
             )
         }
+        Spacer( modifier = Modifier.height(dim.espacio) )
     }
     productoEliminar?.let { producto ->
         AlertDialog(
@@ -271,18 +358,20 @@ fun ActualizarStock(
                             ).show()
                         }
                     }
-                ){
+                ) {
                     Text("Eliminar")
                 }
+                Spacer( modifier = Modifier.height(dim.espacio) )
             },
             dismissButton = {
                 Button(
                     onClick = {
                         productoEliminar = null
                     }
-                ){
+                ) {
                     Text("Cancelar")
                 }
+                Spacer( modifier = Modifier.height(dim.espacio) )
             }
         )
     }

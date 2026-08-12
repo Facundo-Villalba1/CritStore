@@ -1,29 +1,23 @@
 package com.example.critstore
 
-import android.content.ContentValues
-import android.content.Context
-import android.graphics.Paint
-import android.graphics.pdf.PdfDocument
-import android.os.Environment
-import android.provider.MediaStore
-import android.widget.Toast
+import android.content.*
+import android.graphics.*
+import android.graphics.pdf.*
+import android.os.*
+import android.provider.*
+import android.util.*
+import android.widget.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.RectF
-
+import androidx.compose.ui.*
+import androidx.compose.ui.platform.*
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.*
+import kotlinx.coroutines.*
+import java.text.*
+import java.util.*
 
 @Composable
 fun DetalleVenta(
@@ -35,36 +29,45 @@ fun DetalleVenta(
 )
  {
     val scope = rememberCoroutineScope()
+     val dim = obtenerDimensiones()
     val context = LocalContext.current
     var detalles by remember {
         mutableStateOf<List<DetallePlanilla>>(emptyList())
     }
+     var sincronizando by remember {
+         mutableStateOf(false)
+     }
     LaunchedEffect(planillaId) {
         detalles = planillaDao.obtenerDetallePlanilla(
-            planillaId
+            planilla.id
         )
     }
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(top = dim.paddingPantalla * 2,
+                start = dim.paddingPantalla,
+                end = dim.paddingPantalla,
+                bottom = dim.paddingPantalla)
     ) {
         Text(
             text = "Detalle de Venta",
-            style = MaterialTheme.typography.headlineSmall
-        )
+            fontSize = dim.titulo,
+            fontWeight = FontWeight.Bold)
         Spacer(
-            modifier = Modifier.height(10.dp)
+            Modifier.height(dim.espacio)
         )
         Text(
             text = "Evento: ${planilla.NombreEvento}",
-            style = MaterialTheme.typography.titleMedium
+            fontSize = dim.texto,
+            fontWeight = FontWeight.Bold
         )
         Text(
             text = "Fecha: ${planilla.FechaDesde}",
+            fontSize = dim.texto
         )
         Spacer(
-            modifier = Modifier.height(20.dp)
+            Modifier.height(dim.espacio)
         )
         LazyColumn(
             modifier = Modifier
@@ -78,18 +81,22 @@ fun DetalleVenta(
                 ) {
                     Text(
                         "Producto",
+                        fontSize = dim.texto,
                         modifier = Modifier.weight(2f)
                     )
                     Text(
                         "Precio",
+                        fontSize = dim.texto,
                         modifier = Modifier.weight(1f)
                     )
                     Text(
                         "Cant.",
+                        fontSize = dim.texto,
                         modifier = Modifier.weight(1f)
                     )
                     Text(
                         "Total",
+                        fontSize = dim.texto,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -102,18 +109,22 @@ fun DetalleVenta(
                 ) {
                     Text(
                         detalle.Nombre,
+                        fontSize = dim.texto,
                         modifier = Modifier.weight(2f)
                     )
                     Text(
                         "$${detalle.Precio}",
+                        fontSize = dim.texto,
                         modifier = Modifier.weight(1f)
                     )
                     Text(
                         detalle.Ventas.toString(),
+                        fontSize = dim.texto,
                         modifier = Modifier.weight(1f)
                     )
                     Text(
                         "$${detalle.Total}",
+                        fontSize = dim.texto,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -125,29 +136,45 @@ fun DetalleVenta(
             }
         Text(
             text = "TOTAL: $$totalVenta",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier
-                .align(Alignment.End)
-                .padding(8.dp)
+            fontSize = dim.titulo,
+            fontWeight = FontWeight.Bold
         )
         Spacer(
-            modifier = Modifier.height(10.dp)
+            Modifier.height(dim.espacio)
         )
         Button(
             onClick = {
                 editarPlanilla(planilla)
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier =Modifier
+                .widthIn(dim.alturaBotonInterno)
+                .fillMaxWidth()
+                .align(Alignment.CenterHorizontally)
         ) {
-            Text("✏️ Modificar Venta")
+            Text("✏️ Modificar Venta"
+            ,fontSize = dim.texto)
         }
-        Button(
+        Spacer(
+            modifier = Modifier.height(dim.espacio)
+        )
+       /* Button(
             onClick = {
                 scope.launch {
+                    val planillaActualizada =
+                        planillaDao.obtenerPlanillaPorId(planilla.id)
+                    Log.d(
+                        "TOTAL_DETALLES",
+                        "Cantidad=${detalles.size}"
+                    )
+                    eliminarDetallesPlanilla(planilla.Uudd)
                     detalles.forEach { detalle ->
-                        sincronizarDetalle(
+                        Log.d(
+                            "ANTES_SYNC",
+                            "Producto=${detalle.Nombre} UUID=${detalle.Uudd}"
+                        )
+                            sincronizarDetalle(
                             detalle,
-                            planilla
+                            planillaActualizada
                         )
                     }
                     Toast.makeText(
@@ -157,14 +184,124 @@ fun DetalleVenta(
                     ).show()
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier =Modifier
+                .widthIn(dim.alturaBotonInterno)
+                .fillMaxWidth()
+                .align(Alignment.CenterHorizontally)
         ) {
             Text(
-                "🔄 Sincronizar Venta"
+                "🔄 Sincronizar Venta",
+            )
+        }*/
+        Button(
+            onClick = {
+
+                if (sincronizando) {
+                    return@Button
+                }
+
+                scope.launch {
+
+                    sincronizando = true
+
+                    try {
+
+                        val planillaActualizada =
+                            planillaDao.obtenerPlanillaPorId(
+                                planilla.id
+                            )
+
+                        Log.d(
+                            "TOTAL_DETALLES",
+                            "Cantidad=${detalles.size}"
+                        )
+
+                        eliminarDetallesPlanilla(
+                            planilla.Uudd
+                        )
+
+                        detalles.forEach { detalle ->
+
+                            Log.d(
+                                "ANTES_SYNC",
+                                "Producto=${detalle.Nombre} UUID=${detalle.Uudd}"
+                            )
+
+                            sincronizarDetalle(
+                                detalle,
+                                planillaActualizada
+                            )
+                        }
+
+                        Toast.makeText(
+                            context,
+                            "✅ Venta sincronizada correctamente",
+                            Toast.LENGTH_LONG
+                        ).show()
+
+                    } catch (e: Exception) {
+
+                        Log.e(
+                            "SYNC_VENTA",
+                            "Error sincronizando venta",
+                            e
+                        )
+
+                        Toast.makeText(
+                            context,
+                            "❌ Error al sincronizar: ${e.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+
+                    } finally {
+
+                        sincronizando = false
+                    }
+                }
+            },
+
+            enabled = !sincronizando,
+
+            modifier = Modifier
+                .widthIn(
+                    min = dim.alturaBotonInterno
+                )
+                .fillMaxWidth()
+                .align(Alignment.CenterHorizontally),
+
+            colors = ButtonDefaults.buttonColors(
+                containerColor =
+                    if (sincronizando)
+                        MaterialTheme.colorScheme.surfaceVariant
+                    else
+                        MaterialTheme.colorScheme.primary,
+
+                contentColor =
+                    if (sincronizando)
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    else
+                        MaterialTheme.colorScheme.onPrimary,
+
+                disabledContainerColor =
+                    MaterialTheme.colorScheme.surfaceVariant,
+
+                disabledContentColor =
+                    MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        ) {
+
+            Text(
+                text =
+                    if (sincronizando)
+                        "⏳ Sincronizando..."
+                    else
+                        "☁ Sincronizar Venta",
+
+                fontSize = dim.texto
             )
         }
         Spacer(
-            modifier = Modifier.height(10.dp)
+            Modifier.height(dim.espacio)
         )
         Button(
             onClick = {
@@ -181,24 +318,35 @@ fun DetalleVenta(
                     fechaHasta = planilla.FechaHasta
                 )
             },
-            modifier = Modifier
+            modifier =Modifier
+                .widthIn(dim.alturaBotonInterno)
                 .fillMaxWidth()
+                .align(Alignment.CenterHorizontally)
         ) {
             Text(
-                "📄 Generar PDF"
+                "📄 Generar PDF",
+                fontSize = dim.texto
             )
         }
+        Spacer(
+            modifier = Modifier.height(dim.espacio)
+        )
         Button(
             onClick = {
                 volver()
             },
-            modifier = Modifier
+            modifier =Modifier
+                .widthIn(dim.alturaBotonInterno)
                 .fillMaxWidth()
+                .align(Alignment.CenterHorizontally)
         ) {
             Text(
-                "Volver"
+                "Volver",  fontSize = dim.texto
             )
         }
+        Spacer(
+            modifier = Modifier.height(dim.espacio)
+        )
     }
 }
 fun generarPDF(

@@ -1,159 +1,284 @@
 package com.example.critstore
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.*
+import androidx.compose.ui.unit.*
 
 @Composable
 fun AgregarProductos(
     productoDao: ProductoDao,
+    productosYaAgregados: List<Producto>,
     agregarProducto: (Producto) -> Unit,
     volver: () -> Unit
 ) {
-    val configuracion = LocalConfiguration.current
-    val anchoPantalla = configuracion.screenWidthDp
-    val esTablet = anchoPantalla >= 600
-    val paddingPantalla =
-        if (esTablet) 32.dp else 16.dp
-    val tamañoTitulo =
-        if (esTablet) 32.sp else 24.sp
-    val tamañoTexto =
-        if (esTablet) 20.sp else 16.sp
-    val anchoContenido =
-        if (esTablet) 700.dp else 500.dp
-    val altoBoton =
-        if (esTablet) 60.dp else 50.dp
-    var productos by remember {
-        mutableStateOf(emptyList<Producto>())
+  val dim = obtenerDimensiones()
+   var productos by remember {
+        mutableStateOf(
+            emptyList<Producto>()
+        )
     }
-    var busqueda by remember {
-        mutableStateOf("")
+   var tipoSeleccionado by remember {
+        mutableStateOf("Todos")
+    }
+   var desplegarTipos by remember {
+        mutableStateOf(false)
     }
     LaunchedEffect(Unit) {
-        productos = productoDao.obtenerProductos()
+       productos =
+            productoDao.obtenerProductos()
     }
-    val productosFiltrados =
-        productos.filter {
-            it.Cantidad > 0 &&
-                    it.Nombre.contains(
-                        busqueda,
-                        ignoreCase = true
-                    )
+  val productosAgregados =
+        productosYaAgregados
+            .map {
+                it.uuid
+            }
+            .toSet()
+   val tipos =
+        listOf("Todos") +
+                productos
+                    .map {
+                        it.Tipo
+                    }
+                    .filter {
+                        it.isNotBlank()
+                    }
+                    .distinct()
+                    .sorted()
+  val productosFiltrados =
+        productos.filter { producto ->
+          val tieneStock =
+                producto.Cantidad > 0
+           val noEstaAgregado =
+                producto.uuid !in productosAgregados
+           val coincideTipo =
+                tipoSeleccionado == "Todos" ||
+                        producto.Tipo == tipoSeleccionado
+           tieneStock &&
+                    noEstaAgregado &&
+                    coincideTipo
         }
-    Column(
+  Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(paddingPantalla)
+            .padding(
+                top = dim.paddingPantalla * 2,
+               start = dim.paddingPantalla,
+               end = dim.paddingPantalla,
+               bottom = dim.paddingPantalla
+            )
     ) {
-        Column(
+       Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .widthIn(max = anchoContenido)
-                .align(Alignment.CenterHorizontally)
+                .widthIn()
+                .align(
+                    Alignment.CenterHorizontally
+                )
         ) {
-            Text(
+          Text(
                 text = "Agregar Productos",
-                fontSize = tamañoTitulo,
-                style = MaterialTheme.typography.headlineMedium
+                fontSize = dim.titulo,
+                style =
+                    MaterialTheme
+                        .typography
+                        .headlineMedium
             )
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
-                value = busqueda,
-                onValueChange = {
-                    busqueda = it
-                },
-                label = {
-                    Text(
-                        "Buscar producto",
-                        fontSize = tamañoTexto
-                    )
-                },
-                textStyle = LocalTextStyle.current.copy(
-                    fontSize = tamañoTexto
-                ),
-                modifier = Modifier.fillMaxWidth()
+           Spacer(
+                modifier = Modifier.height(
+                    dim.espacio
+                )
             )
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-        LazyColumn(
-            modifier = Modifier.weight(1f)
-        ) {
-            items(productosFiltrados) { producto ->
-                Card(
+          Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+               OutlinedButton(
+                    onClick = {
+                        desplegarTipos =
+                            !desplegarTipos
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 6.dp),
-                    elevation = CardDefaults.cardElevation(
-                        defaultElevation = 3.dp
-                    )
+                        .height(
+                            dim.alturaBotonInterno
+                        )
                 ) {
-                    Row(
+                   Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement =
+                            Arrangement.SpaceBetween,
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+                       Text(
+                            text =
+                                "Tipo: $tipoSeleccionado",
+                            fontSize = dim.texto
+                        )
+                       Text(
+                            text =
+                                if (desplegarTipos) {
+                                    "▲"
+                                } else {
+                                    "▼"
+                                },
+                            fontSize = dim.texto
+                        )
+                    }
+                }
+             DropdownMenu(
+                    expanded = desplegarTipos,
+                    onDismissRequest = {
+                        desplegarTipos = false
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                   tipos.forEach { tipo ->
+                       DropdownMenuItem(
+                           text = {
+                               Text(
+                                    text = tipo,
+                                    fontSize = dim.texto
+                                )
+                            },
+                           onClick = {
+                               tipoSeleccionado =
+                                    tipo
+                               desplegarTipos =
+                                    false
+                            }
+                        )
+                    }
+                }
+            }
+           Spacer(
+                modifier = Modifier.height(
+                    dim.espacio
+                )
+            )
+        }
+       LazyColumn(
+            modifier = Modifier.weight(1f)
+        ) {
+           items(
+                productosFiltrados,
+                key = {
+                    it.uuid
+                }
+            ) { producto ->
+               Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            vertical = 6.dp
+                        ),
+                   elevation =
+                        CardDefaults
+                            .cardElevation(
+                                defaultElevation = 3.dp
+                            )
+                ) {
+                   Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(
-                                if (esTablet) 20.dp else 12.dp
+                                dim.paddingPantalla
                             ),
-                        verticalAlignment = Alignment.CenterVertically
+                       verticalAlignment =
+                            Alignment.CenterVertically,
+                       horizontalArrangement =
+                            Arrangement.spacedBy(
+                                dim.espacio
+                            )
                     ) {
-                        Column(
+                       Column(
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text(
-                                text = producto.Nombre,
-                                fontSize = tamañoTexto,
-                                style = MaterialTheme.typography.titleMedium
+                           Text(
+                                text =
+                                    producto.Nombre,
+                               fontSize =
+                                    dim.texto,
+                               style =
+                                    MaterialTheme
+                                        .typography
+                                        .titleMedium
                             )
-                            Spacer(
-                                modifier = Modifier.height(4.dp)
+                           Spacer(
+                                modifier =
+                                    Modifier.height(
+                                        4.dp
+                                    )
                             )
-                            Text(
-                                text = "Stock: ${producto.Cantidad}",
-                                fontSize = tamañoTexto
+                           Text(
+                                text =
+                                    "Tipo: ${producto.Tipo}",
+                               fontSize =
+                                    dim.texto
                             )
-                            Text(
-                                text = "Precio: $${producto.Precio}",
-                                fontSize = tamañoTexto
+                           Text(
+                                text =
+                                    "Stock: ${producto.Cantidad}",
+                               fontSize =
+                                    dim.texto
+                            )
+                           Text(
+                                text =
+                                    "Precio: $${producto.Precio}",
+                               fontSize =
+                                    dim.texto
                             )
                         }
                         Spacer(
-                            modifier = Modifier.width(12.dp)
+                            modifier = Modifier.height(dim.espacio)
                         )
                         Button(
                             onClick = {
-                                agregarProducto(producto)
+                               agregarProducto(
+                                    producto
+                                )
                             },
-                            modifier = Modifier
-                                .height(altoBoton)
+                           modifier = Modifier
+                                .height(
+                                    dim.alturaBotonInterno
+                                )
                         ) {
-                            Text(
+                           Text(
                                 text = "Agregar",
-                                fontSize = tamañoTexto
+                                fontSize =
+                                    dim.texto
                             )
                         }
                     }
                 }
             }
         }
+       Spacer(
+            modifier = Modifier.height(
+                dim.espacio
+            )
+        )
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier = Modifier.height(dim.espacio)
         )
         OutlinedButton(
             onClick = volver,
-            modifier = Modifier
+            modifier =Modifier
+                .widthIn(dim.alturaBotonInterno)
                 .fillMaxWidth()
-                .height(altoBoton)
+                .align(Alignment.CenterHorizontally)
         ) {
             Text(
                 text = "⬅ Volver",
-                fontSize = tamañoTexto
+                fontSize =  dim.texto
             )
-        }
-    }
+            Spacer(
+                modifier = Modifier.height(dim.espacio)
+            )
+   }
+}
 }

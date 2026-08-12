@@ -1,30 +1,24 @@
 package com.example.critstore
 
-import android.widget.Toast
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
-import android.content.ContentValues
-import android.content.Context
-import android.graphics.Paint
+import android.content.*
+import android.graphics.*
 import android.graphics.pdf.PdfDocument
 import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
+import android.widget.Toast
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.platform.*
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.*
+import kotlinx.coroutines.*
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.RectF
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,10 +28,8 @@ fun VerProductos(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val configuration = LocalConfiguration.current
-    val esTablet =
-        configuration.screenWidthDp >= 600
-    var productos by remember {
+    val dim = obtenerDimensiones()
+        var productos by remember {
         mutableStateOf(
             emptyList<Producto>()
         )
@@ -91,9 +83,7 @@ fun VerProductos(
             val lista =
                 productoDao.obtenerProductos()
             lista.forEach { producto ->
-                sincronizarProducto(
-                    producto
-                )
+                sincronizarProducto(producto)
             }
             Toast.makeText(
                 context,
@@ -101,56 +91,59 @@ fun VerProductos(
                 Toast.LENGTH_LONG
             ).show()
         } catch (e: Exception) {
-            Toast.makeText(
-                context,
-                "Error enviando Google: ${e.message}",
-                Toast.LENGTH_LONG
-            ).show()
         } finally {
-            sincronizando = false
+            sincronizando = true
         }
     }
     LaunchedEffect(Unit) {
-        cargarDesdeGoogle()
-    }
-    val productosFiltrados =
-        if (
-            tipoSeleccionado == "Todos"
-        ) {
-            productos
-        } else {
-            productos.filter {
-                it.Tipo.trim() ==
-                        tipoSeleccionado.trim()
+       cargarProductos()
+       scope.launch(Dispatchers.IO) {
+            try {
+                val listaGoogle =
+                    obtenerProductosGoogle()
+                listaGoogle.forEach { producto ->
+                    productoDao.insertarProducto(
+                        producto
+                    )
+                }
+                withContext(Dispatchers.Main) {
+                    cargarProductos()
+                }
+            } catch (e: Exception) {
+                Log.e(
+                    "GOOGLE",
+                    "Error cargando productos",
+                    e
+                )
             }
         }
-    val anchoProducto =
-        if (esTablet)
-            3f
-        else
-            2f
+    }
+   val productosFiltrados =
+        productos.filter {
+           it.Cantidad > 0 &&
+                    (
+                            tipoSeleccionado == "Todos" ||
+                                    it.Tipo.trim() ==
+                                    tipoSeleccionado.trim()
+                            )
+        }
+    val anchoProducto = dim.pesoProducto
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(
-                if (esTablet)
-                    32.dp
-                else
-                    16.dp
+                top = dim.paddingPantalla * 2,
+                start = dim.paddingPantalla,
+                end = dim.paddingPantalla,
+                bottom = dim.paddingPantalla
             )
     ) {
         Text(
             text = "Ver Productos",
-            style =
-                if (esTablet)
-                    MaterialTheme.typography.headlineLarge
-                else
-                    MaterialTheme.typography.headlineMedium
+            fontSize = dim.titulo,
+            style = MaterialTheme.typography.headlineMedium
         )
-        Spacer(
-            modifier =
-                Modifier.height(16.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
         ExposedDropdownMenuBox(
             expanded = expandido,
             onExpandedChange = {
@@ -163,7 +156,8 @@ fun VerProductos(
                 readOnly = true,
                 label = {
                     Text(
-                        "Filtrar por tipo"
+                        text = "Filtrar por tipo",
+                        fontSize =  dim.texto,
                     )
                 },
                 modifier = Modifier
@@ -192,9 +186,7 @@ fun VerProductos(
                 }
             }
         }
-        Spacer(
-            modifier = Modifier.height(16.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -202,50 +194,26 @@ fun VerProductos(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(
-                        if(esTablet)
-                            14.dp
-                        else
-                            10.dp
-                    )
+                    .padding(dim.espacio)
             ) {
                 Text(
                     text = "Producto",
-                    modifier =
-                        Modifier.weight(
-                            anchoProducto
-                        ),
-                    fontSize =
-                        if(esTablet)
-                            16.sp
-                        else
-                            13.sp
+                    fontSize = dim.texto,
+                    modifier = Modifier.weight(3f)
                 )
-                Text(
+               Text(
                     text = "Stock",
-                    modifier =
-                        Modifier.weight(1f),
-                    fontSize =
-                        if(esTablet)
-                            16.sp
-                        else
-                            13.sp
+                    fontSize = dim.texto,
+                    modifier = Modifier.weight(1f)
                 )
-                Text(
+               Text(
                     text = "Precio",
-                    modifier =
-                        Modifier.weight(1f),
-                    fontSize =
-                        if(esTablet)
-                            16.sp
-                        else
-                            13.sp
+                    fontSize = dim.texto,
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
-        Spacer(
-            modifier = Modifier.height(6.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
@@ -254,21 +222,14 @@ fun VerProductos(
                 productosFiltrados
             ) { producto ->
                 Card(
-                    modifier = Modifier
+                    Modifier
                         .fillMaxWidth()
-                        .padding(
-                            vertical = 4.dp
-                        )
+                        .padding(vertical = 4.dp)
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(
-                                if(esTablet)
-                                    14.dp
-                                else
-                                    10.dp
-                            )
+                            .padding(dim.espacio)
                     ) {
                         Text(
                             text =
@@ -280,11 +241,7 @@ fun VerProductos(
                             maxLines = 1,
                             overflow =
                                 TextOverflow.Ellipsis,
-                            fontSize =
-                                if(esTablet)
-                                    16.sp
-                                else
-                                    13.sp
+                           fontSize =  dim.texto,
                         )
                         Text(
                             text =
@@ -292,60 +249,45 @@ fun VerProductos(
                                     .toString(),
                             modifier =
                                 Modifier.weight(1f),
-                            fontSize =
-                                if(esTablet)
-                                    16.sp
-                                else
-                                    13.sp
+                            fontSize =  dim.texto,
                         )
                         Text(
                             text =
                                 "$${producto.Precio}",
                             modifier =
                                 Modifier.weight(1f),
-                            fontSize =
-                                if(esTablet)
-                                    16.sp
-                                else
-                                    13.sp
+                           fontSize =  dim.texto,
                         )
                     }
+                    Spacer( modifier = Modifier.height(dim.espacio) )
                 }
             }
         }
-        Spacer(
-            modifier = Modifier.height(12.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
         Button(
             onClick = {
-                scope.launch {
-                    sincronizarGoogle()
+                Toast.makeText(
+                    context,
+                    "La sincronización continúa en segundo plano.",
+                    Toast.LENGTH_SHORT
+                ).show()
+                GlobalScope.launch(Dispatchers.IO) {
+                    try {
+                        sincronizarGoogle()
+                    } catch (e: Exception) {
+                    }
                 }
+                volver()
             },
-            enabled = !sincronizando,
-            modifier =
-                if(esTablet)
-                    Modifier
-                        .width(350.dp)
-                        .align(
-                            androidx.compose.ui.Alignment.CenterHorizontally
-                        )
-                else
-                    Modifier
-                        .fillMaxWidth()
+            modifier =Modifier
+                .widthIn(dim.alturaBotonInterno)
+                .fillMaxWidth()
+                .align(Alignment.CenterHorizontally)
         ) {
-            Text(
-                text =
-                    if(sincronizando)
-                        "☁ Enviando..."
-                    else
-                        "☁ Guardar en Google"
-            )
+            Text(text ="☁ Guardar",
+                fontSize =  dim.texto)
         }
-        Spacer(
-            modifier =
-                Modifier.height(10.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
         Button(
             onClick = {
                 generarPDFStock(
@@ -353,42 +295,28 @@ fun VerProductos(
                     productosFiltrados
                 )
             },
-            modifier =
-                if(esTablet)
-                    Modifier
-                        .width(350.dp)
-                        .align(
-                            androidx.compose.ui.Alignment.CenterHorizontally
-                        )
-                else
-                    Modifier
-                        .fillMaxWidth()
+            modifier =Modifier
+                .widthIn(dim.alturaBotonInterno)
+                .fillMaxWidth()
+                .align(Alignment.CenterHorizontally)
         ) {
             Text(
-                "📄 Generar PDF Stock"
+                "📄 PDF Stock"
             )
         }
-        Spacer(
-            modifier =
-                Modifier.height(10.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
         OutlinedButton(
             onClick = volver,
-            modifier =
-                if(esTablet)
-                    Modifier
-                        .width(350.dp)
-                        .align(
-                            androidx.compose.ui.Alignment.CenterHorizontally
-                        )
-                else
-                    Modifier
-                        .fillMaxWidth()
+            modifier =Modifier
+                .widthIn(dim.alturaBotonInterno)
+                .fillMaxWidth()
+                .align(Alignment.CenterHorizontally)
         ) {
-            Text(
-                "⬅ Volver"
+            Text(text="⬅ Volver",
+                fontSize = dim.texto
             )
         }
+        Spacer( modifier = Modifier.height(dim.espacio) )
     }
 }
 fun generarPDFStock(

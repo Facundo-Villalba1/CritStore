@@ -8,6 +8,7 @@ data class DetallePlanilla(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val idPlanilla: Int,
+    val Uudd: String ,
     val Nombre: String,
     val Precio: Int,
     val Ventas: Int,

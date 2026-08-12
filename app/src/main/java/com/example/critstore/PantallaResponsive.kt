@@ -1,50 +1,25 @@
 package com.example.critstore
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.res.*
 
 @Composable
 fun PantallaCelular(
     productos: () -> Unit,
     ventas: () -> Unit,
-    Reportes: () -> Unit
+    Reportes: () -> Unit,
+    Presupuesto:()-> Unit,
+    Materiales: () -> Unit
 ) {
-    val configuracion =
-        LocalConfiguration.current
-    val esTablet =
-        configuracion.screenWidthDp >= 600
-    val padding =
-        if(esTablet)
-            40.dp
-        else
-            20.dp
-    val tamañoLogo =
-        if(esTablet)
-            220.dp
-        else
-            140.dp
-    val alturaBoton =
-        if(esTablet)
-            70.dp
-        else
-            55.dp
-    val tamañoTexto =
-        if(esTablet)
-            22.sp
-        else
-            18.sp
+    val dim = obtenerDimensiones()
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(padding),
+            .padding(dim.paddingPantalla),
         horizontalAlignment =
             Alignment.CenterHorizontally,
         verticalArrangement =
@@ -58,66 +33,80 @@ fun PantallaCelular(
                 "Logo CritStore",
             modifier =
                 Modifier.size(
-                    tamañoLogo
+                    dim.logo
                 )
         )
-        Spacer(
-            Modifier.height(20.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
         Text(
             text = "CritStore",
-            style =
-                MaterialTheme.typography.headlineLarge
+            fontSize = dim.titulo,
+            style =MaterialTheme.typography.headlineLarge
         )
-        Spacer(
-            Modifier.height(40.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
         Button(
             onClick = productos,
             modifier = Modifier
-                .fillMaxWidth()
-                .height(
-                    alturaBoton
+                .widthIn(
+                    dim.alturaBotonInterno
                 )
         ){
             Text(
                 "📦 Productos",
-                fontSize =
-                    tamañoTexto
+                fontSize = dim.texto
             )
         }
-        Spacer(
-            Modifier.height(20.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
+        Button(
+            onClick = Materiales,
+            modifier = Modifier
+                .widthIn(
+                    dim.alturaBotonInterno)
+        ) {
+            Text(
+                text = "🧵 Materiales",
+                fontSize = dim.texto
+            )
+        }
+        Spacer( modifier = Modifier.height(dim.espacio) )
         Button(
             onClick = ventas,
             modifier = Modifier
-                .fillMaxWidth()
-                .height(
-                    alturaBoton
-                )
-        ){
+                .widthIn(
+                    dim.alturaBotonInterno)
+        )
+
+
+        {
             Text(
                 "🛒 Ventas",
-                fontSize =
-                    tamañoTexto
+                fontSize =dim.texto
             )
         }
-        Spacer(
-            Modifier.height(20.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
         Button(
             onClick =Reportes,
             modifier = Modifier
-                .fillMaxWidth()
-                .height(
-                    alturaBoton
-                )
+                .widthIn(
+                    dim.alturaBotonInterno )
         ){
             Text(
                 text = "📊  Reportes",
-                fontSize = tamañoTexto
+                fontSize = dim.texto
             )
+            Spacer( modifier = Modifier.height(dim.espacio) )
+        }
+        Spacer( modifier = Modifier.height(dim.espacio) )
+        Button(
+            onClick = Presupuesto,
+            modifier = Modifier
+                .widthIn(
+                    dim.alturaBotonInterno )
+        ){
+            Text(
+                text = "🏷️  Presupuesto",
+                fontSize = dim.texto
+            )
+            Spacer( modifier = Modifier.height(dim.espacio) )
         }
     }
 }

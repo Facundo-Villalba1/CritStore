@@ -7,18 +7,23 @@ import androidx.compose.runtime.*
 import androidx.room.Room
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    override fun onCreate(
+        savedInstanceState: Bundle?
+    ) {
+        super.onCreate(
+            savedInstanceState
+        )
         setContent {
-            val db = remember {
-                Room.databaseBuilder(
-                    applicationContext,
-                    AppDatabase::class.java,
-                    "critstore.db"
-                )
-                    .fallbackToDestructiveMigration()
-                    .build()
-            }
+            val db =
+                remember {
+                    Room.databaseBuilder(
+                        applicationContext,
+                        AppDatabase::class.java,
+                        "critstore.db"
+                    )
+                        .fallbackToDestructiveMigration()
+                        .build()
+                }
             var pantalla by remember {
                 mutableStateOf("inicio")
             }
@@ -28,8 +33,10 @@ class MainActivity : ComponentActivity() {
             var planillaActual by remember {
                 mutableStateOf<PlanillaVenta?>(null)
             }
-            when(pantalla) {
+            when (pantalla) {
+                // =====================================================
                 // PANTALLA PRINCIPAL
+                // =====================================================
                 "inicio" -> PantallaCelular(
                     productos = {
                         pantalla = "productos"
@@ -39,10 +46,18 @@ class MainActivity : ComponentActivity() {
                     },
                     Reportes = {
                         pantalla = "reportes"
+                    },
+                    Presupuesto = {
+                        pantalla = "presupuesto"
+                    },
+                    Materiales = {
+                        pantalla = "materiales"
                     }
                 )
+                // =====================================================
                 // MENU PRODUCTOS
-                 "productos" -> PantallaProductos(
+                // =====================================================
+                "productos" -> PantallaProductos(
                     volver = {
                         pantalla = "inicio"
                     },
@@ -56,28 +71,71 @@ class MainActivity : ComponentActivity() {
                         pantalla = "actualizarStock"
                     }
                 )
+                // =====================================================
                 // INGRESAR PRODUCTO
+                // =====================================================
                 "ingresarProducto" -> IngresarProducto(
-                    productoDao = db.productoDao(),
+                    productoDao =
+                        db.productoDao(),
                     volver = {
                         pantalla = "productos"
                     }
                 )
-                // CONSULTAR STOCK
+                // =====================================================
+                // VER PRODUCTOS
+                // =====================================================
                 "verProductos" -> VerProductos(
-                    productoDao = db.productoDao(),
+                    productoDao =
+                        db.productoDao(),
                     volver = {
                         pantalla = "productos"
                     }
                 )
+                // =====================================================
                 // ACTUALIZAR STOCK
+                // =====================================================
                 "actualizarStock" -> ActualizarStock(
-                    productoDao = db.productoDao(),
+                    productoDao =
+                        db.productoDao(),
                     volver = {
                         pantalla = "productos"
                     }
                 )
+                // =====================================================
+                // MENU MATERIALES
+                // =====================================================
+                "materiales" -> PantallaMateriales(
+                    volver = {
+                        pantalla = "inicio"
+                    },
+                    verMateriales = {
+                        pantalla = "verMateriales"
+                    },
+                    actualizarMateriales = {
+                        pantalla = "actualizarMateriales"
+                    }
+                )
+                // =====================================================
+                // VER MATERIALES
+                // =====================================================
+                "verMateriales" -> VerMateriales(
+                    materialDao = db.materialDao(),
+                    volver = {
+                        pantalla = "materiales"
+                    }
+                )
+                // =====================================================
+                // ACTUALIZAR MATERIALES
+                // =====================================================
+                "actualizarMateriales" -> ActualizarMateriales(
+                    materialDao = db.materialDao(),
+                    volver = {
+                        pantalla = "materiales"
+                    }
+                )
+                // =====================================================
                 // MENU VENTAS
+                // =====================================================
                 "ventas" -> PantallaVentas(
                     volver = {
                         pantalla = "inicio"
@@ -89,81 +147,134 @@ class MainActivity : ComponentActivity() {
                         pantalla = "reporteVentas"
                     }
                 )
+                // =====================================================
                 // GENERAR PLANILLA
+                // =====================================================
                 "generarPlanilla" -> GenerarPlanilla(
-                    productoDao = db.productoDao(),
-                    planillaDao = db.planillaDao(),
+                    productoDao =
+                        db.productoDao(),
+                    planillaDao =
+                        db.planillaDao(),
                     volver = {
                         pantalla = "ventas"
                     }
                 )
+                // =====================================================
                 // REPORTE VENTAS
+                // =====================================================
                 "reporteVentas" -> ReporteVentas(
-                    planillaDao = db.planillaDao(),
+                    planillaDao =
+                        db.planillaDao(),
                     verDetalle = { planilla ->
-                        planillaSeleccionada = planilla.id
-                        planillaActual = planilla
-                        pantalla = "detalleVenta"
+                        planillaSeleccionada =
+                            planilla.id
+                        planillaActual =
+                            planilla
+                        pantalla =
+                            "detalleVenta"
                     },
                     volver = {
                         pantalla = "ventas"
                     }
                 )
+                // =====================================================
                 // DETALLE VENTA
+                // =====================================================
                 "detalleVenta" -> {
                     planillaActual?.let { planilla ->
                         DetalleVenta(
-                            planillaId = planillaSeleccionada,
-                            planillaDao = db.planillaDao(),
-                            planilla = planilla,
+                            planillaId =
+                                planillaSeleccionada,
+                            planillaDao =
+                                db.planillaDao(),
+                            planilla =
+                                planilla,
                             editarPlanilla = {
-                                planillaActual = it
-                                pantalla = "editarPlanilla"
+                                planillaActual =
+                                    it
+                                pantalla =
+                                    "editarPlanilla"
                             },
                             volver = {
-                                pantalla = "reporteVentas"
+                                pantalla =
+                                    "reporteVentas"
                             }
                         )
                     }
                 }
+                // =====================================================
                 // EDITAR PLANILLA
+                // =====================================================
                 "editarPlanilla" -> {
                     planillaActual?.let { planilla ->
                         EditarPlanilla(
-                            planilla = planilla,
-                            planillaDao = db.planillaDao(),
-                            productoDao = db.productoDao(),
+                            planilla =
+                                planilla,
+                            planillaDao =
+                                db.planillaDao(),
+                            productoDao =
+                                db.productoDao(),
                             volver = {
-                                pantalla = "detalleVenta"
+                                pantalla =
+                                    "detalleVenta"
                             }
                         )
                     }
                 }
-                    // MENU REPORTES
+                // =====================================================
+                // MENU REPORTES
+                // =====================================================
                 "reportes" -> Reportes(
                     volver = {
                         pantalla = "inicio"
                     },
                     mayorVentaEvento = {
-                        pantalla = "mayorVentaEvento"
+                        pantalla =
+                            "mayorVentaEvento"
                     },
-                                   mayorVendidoFecha = {
-                        pantalla = "vendidoPorFecha"
+                    mayorVendidoFecha = {
+                        pantalla =
+                            "vendidoPorFecha"
+                    },
+                    productoMasVendidoMes = {
+                        pantalla =
+                            "ProductoMasVendidoMes"
                     }
                 )
+                // =====================================================
                 // MAYOR VENTA POR EVENTO
+                // =====================================================
                 "mayorVentaEvento" -> MayorVentaEvento(
                     volver = {
                         pantalla = "reportes"
                     }
                 )
+                // =====================================================
                 // VENDIDO POR FECHA
+                // =====================================================
                 "vendidoPorFecha" -> VendidoPorFecha(
                     volver = {
                         pantalla = "reportes"
                     }
                 )
-                         }
+                // =====================================================
+                // PRODUCTOS MAS VENDIDOS DEL MES
+                // =====================================================
+                "ProductoMasVendidoMes" ->
+                    ProductoMasVendidoMes(
+                        volver = {
+                            pantalla = "reportes"
+                        }
+                    )
+                // =====================================================
+                // PRESUPUESTO
+                // =====================================================
+                "presupuesto" -> PantallaPresupuesto(
+                    volver = {
+                        pantalla = "inicio"
+                    }
+                )
+            }
         }
     }
 }

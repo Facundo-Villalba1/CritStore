@@ -1,27 +1,18 @@
 package com.example.critstore
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.*
+import androidx.compose.ui.text.font.*
+import androidx.compose.ui.unit.*
 
 @Composable
 fun MayorVentaEvento(
     volver: () -> Unit
 ) {
-    val configuration = LocalConfiguration.current
-    val esTablet = configuration.screenWidthDp >= 600
-    val padding = if (esTablet) 30.dp else 16.dp
-    val espacio = if (esTablet) 20.dp else 12.dp
-    val titulo = if (esTablet) 30.sp else 24.sp
-    val texto = if (esTablet) 20.sp else 16.sp
+    val dim = obtenerDimensiones()
     var reporte by remember {
         mutableStateOf<List<ReporteEvento>>(emptyList())
     }
@@ -38,18 +29,19 @@ fun MayorVentaEvento(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(padding)
+            .padding(top = dim.paddingPantalla * 2,
+                     start = dim.paddingPantalla,
+                     end = dim.paddingPantalla,
+                     bottom = dim.paddingPantalla)
     ) {
-        Spacer(
-            modifier = Modifier.height(5.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
         Text(
             text = "🏆 Mayor venta por Evento",
-            fontSize = titulo,
+            fontSize = dim.titulo,
             fontWeight = FontWeight.Bold
         )
         Spacer(
-            modifier = Modifier.height(espacio)
+            modifier = Modifier.height(dim.espacio)
         )
         when {
             cargando -> {
@@ -63,12 +55,10 @@ fun MayorVentaEvento(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         CircularProgressIndicator()
-                        Spacer(
-                            modifier = Modifier.height(16.dp)
-                        )
+                        Spacer( modifier = Modifier.height(dim.espacio) )
                         Text(
                             text = "Cargando datos...",
-                            fontSize = texto
+                            fontSize = dim.texto
                         )
                     }
                 }
@@ -82,7 +72,7 @@ fun MayorVentaEvento(
                 ) {
                     Text(
                         text = "No hay datos recibidos de Google",
-                        fontSize = texto
+                        fontSize = dim.texto
                     )
                 }
             }
@@ -99,26 +89,22 @@ fun MayorVentaEvento(
                             )
                         ) {
                             Column(
-                                modifier = Modifier.padding(padding)
+                                modifier = Modifier.padding(dim.paddingPantalla)
                             ) {
                                 Text(
                                     text = "🎪 ${item.nombreEvento}",
-                                    fontSize = texto,
+                                    fontSize = dim.texto,
                                     fontWeight = FontWeight.Bold
                                 )
-                                Spacer(
-                                    modifier = Modifier.height(8.dp)
-                                )
+                                Spacer( modifier = Modifier.height(dim.espacio) )
                                 Text(
                                     text = "🛒 ${item.producto}",
-                                    fontSize = texto
+                                    fontSize = dim.texto
                                 )
-                                                          Spacer(
-                                    modifier = Modifier.height(8.dp)
-                                )
+                                Spacer( modifier = Modifier.height(dim.espacio) )
                                 Text(
                                     text = "📦 Cantidad total: ${item.cantidadTotal}",
-                                    fontSize = texto
+                                    fontSize = dim.texto
                                 )
                             }
                         }
@@ -126,19 +112,19 @@ fun MayorVentaEvento(
                 }
             }
         }
-        Spacer(
-            modifier = Modifier.height(5.dp)
-        )
+        Spacer( modifier = Modifier.height(dim.espacio) )
         Button(
             onClick = volver,
-            modifier = Modifier
+            modifier =Modifier
+                .widthIn(dim.alturaBotonInterno)
                 .fillMaxWidth()
-                .height(if (esTablet) 60.dp else 52.dp)
+                .align(Alignment.CenterHorizontally)
         ) {
             Text(
                 text = "⬅ Volver",
-                fontSize = texto
+                fontSize = dim.texto
             )
         }
+        Spacer( modifier = Modifier.height(dim.espacio) )
     }
 }

@@ -1,45 +1,46 @@
 package com.example.critstore
 
+import android.util.Log
+import kotlinx.coroutines.*
 import okhttp3.*
 import org.json.JSONObject
-import java.io.IOException
 import okhttp3.MediaType.Companion.toMediaType
 
 private const val URL_GOOGLE =
         "https://script.google.com/macros/s/AKfycbx7rwGp8kC21GdfUcN40JZaqtfj6lnpnNiAue2N-bz6_w3N7NGFBhczHf-JW9pufV7Ueg/exec?tabla=Producto"
-fun enviarGoogle(
+suspend fun enviarGoogle(
     json: JSONObject
-) {
-    val body = RequestBody.create(
-        "application/json".toMediaType(),
-        json.toString()
-    )
-    val request = Request.Builder()
-        .url(URL_GOOGLE)
-        .post(body)
-        .build()
-    val cliente = OkHttpClient()
-    cliente.newCall(request)
-        .enqueue(object : Callback {
-            override fun onFailure(
-                call: Call,
-                e: IOException
-            ) {
-                println(
-                    "ERROR GOOGLE: ${e.message}"
+): Boolean {
+    return withContext(Dispatchers.IO) {
+        try {
+            val body =
+                RequestBody.create(
+                    "application/json".toMediaType(),
+                    json.toString()
                 )
-            }
-            override fun onResponse(
-                call: Call,
-                response: Response
-            ) {
-                println(
-                    "GOOGLE: ${response.body?.string()}"
-                )
-            }
-        })
+            val request =
+                Request.Builder()
+                    .url(URL_GOOGLE)
+                    .post(body)
+                    .build()
+            val clienteGoogle =
+                OkHttpClient()
+            val response =
+                clienteGoogle
+                    .newCall(request)
+                    .execute()
+            response.close()
+            true
+        } catch (e: Exception) {
+            Log.e(
+                "GOOGLE_ERROR",
+                e.message ?: "error"
+            )
+            false
+        }
+    }
 }
-fun sincronizarProducto(
+suspend fun sincronizarProducto(
     producto: Producto
 ) {
     val json = JSONObject()
@@ -69,46 +70,37 @@ fun sincronizarProducto(
     )
     enviarGoogle(json)
 }
-fun sincronizarDetalle(
+suspend fun sincronizarDetalle(
     detalle: DetallePlanilla,
-    planilla: PlanillaVenta
-) {
+    planilla: PlanillaVenta )
+{
+    val json = JSONObject()
+    json.put("tabla", "DetallePlanilla")
+    json.put("uudd", detalle.Uudd)
+    json.put("nombre", detalle.Nombre)
+    json.put("cantidad", detalle.Ventas)
+    json.put("total", detalle.Total)
+    json.put("nombreEvento", planilla.NombreEvento)
+    json.put("fechaDesde", planilla.FechaDesde)
+    json.put("fechaHasta", planilla.FechaHasta)
+    json.put("totalVenta", planilla.totalVenta)
+    Log.d("JSON", json.toString())
+    val resultado = enviarGoogle(json)
+    Log.d("GOOGLE", "Resultado = $resultado")
+}
+suspend fun eliminarDetallesPlanilla(uudd: String) {
     val json = JSONObject()
     json.put(
-        "tabla",
-        "DetallePlanilla"
+        "accion",
+        "eliminarDetallePlanilla"
     )
     json.put(
-        "idPlanilla",
-        detalle.idPlanilla
+        "uudd",
+        uudd
     )
-    json.put(
-        "nombre",
-        detalle.Nombre
+    val resultado = enviarGoogle(json)
+    Log.d(
+        "ELIMINAR_GOOGLE",
+        "Resultado = $resultado"
     )
-    json.put(
-        "cantidad",
-        detalle.Ventas
-    )
-    json.put(
-        "total",
-        detalle.Total
-    )
-    json.put(
-        "nombreEvento",
-        planilla.NombreEvento
-    )
-    json.put(
-        "fechaDesde",
-        planilla.FechaDesde
-    )
-    json.put(
-        "fechaHasta",
-        planilla.FechaHasta
-    )
-    json.put(
-        "totalVenta",
-        planilla.TotalVenta
-    )
-    enviarGoogle(json)
 }

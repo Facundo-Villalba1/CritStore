@@ -4,17 +4,16 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 @Composable
 fun EditarPlanilla(
@@ -23,198 +22,170 @@ fun EditarPlanilla(
     productoDao: ProductoDao,
     volver: () -> Unit
 ) {
-    val context =
-        LocalContext.current
-    val scope =
-        rememberCoroutineScope()
-    val configuracion =
-        LocalConfiguration.current
-    val anchoPantalla =
-        configuracion.screenWidthDp
-    val esTablet =
-        anchoPantalla >= 600
-    val paddingPantalla =
-        if(esTablet) 32.dp else 16.dp
-    val tamañoTitulo =
-        if(esTablet) 32.sp else 24.sp
-    val tamañoTexto =
-        if(esTablet) 18.sp else 14.sp
-    val alturaBoton =
-        if(esTablet) 60.dp else 50.dp
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val dim = obtenerDimensiones()
     var mostrarAgregarProductos by remember {
         mutableStateOf(false)
     }
     var productosVenta by remember {
-        mutableStateOf(
-            emptyList<Producto>()
-        )
+        mutableStateOf(emptyList<Producto>())
     }
     var productosDisponibles by remember {
-        mutableStateOf(
-            emptyList<Producto>()
-        )
+        mutableStateOf(emptyList<Producto>())
     }
     var detallesGuardados by remember {
-        mutableStateOf(
-            emptyList<DetallePlanilla>()
-        )
+        mutableStateOf(emptyList<DetallePlanilla>())
     }
     var cantidadesVenta by remember {
         mutableStateOf(
-            mutableMapOf<String,String>()
+            mutableMapOf<String, String>()
         )
+    }
+    var guardando by remember {
+        mutableStateOf(false)
     }
     LaunchedEffect(planilla.id) {
         detallesGuardados =
-            planillaDao.obtenerDetallePlanilla(
-                planilla.id
-            )
+            planillaDao.obtenerDetallePlanilla(planilla.id)
         productosDisponibles =
             productoDao.obtenerProductos()
         productosVenta =
             productosDisponibles.filter { producto ->
                 detallesGuardados.any {
-                    it.Nombre.trim()
-                        .equals(
-                            producto.Nombre.trim(),
-                            ignoreCase = true
-                        )
+                    it.Nombre.trim().equals(
+                        producto.Nombre.trim(),
+                        ignoreCase = true
+                    )
                 }
             }
         cantidadesVenta =
             productosVenta.associate { producto ->
                 val detalle =
                     detallesGuardados.find {
-                        it.Nombre.trim()
-                            .equals(
-                                producto.Nombre.trim(),
-                                ignoreCase = true
-                            )
+                        it.Nombre.trim().equals(
+                            producto.Nombre.trim(),
+                            ignoreCase = true
+                        )
                     }
                 producto.uuid to
                         (
-                                detalle?.Ventas
-                                    ?.toString()
+                                detalle?.Ventas?.toString()
                                     ?: "0"
                                 )
             }.toMutableMap()
     }
-    if (mostrarAgregarProductos) {
-        AgregarProductos(
+   if (mostrarAgregarProductos) {
+       AgregarProductos(
             productoDao = productoDao,
-            agregarProducto = { producto ->
-                val existe =
-                    productosVenta.any {
+           productosYaAgregados = productosVenta,
+           agregarProducto = { producto ->
+               if (!productosVenta.any {
                         it.uuid == producto.uuid
                     }
-                if(!existe) {
-                    productosVenta =
+                ) {
+                   productosVenta =
                         productosVenta + producto
-                    cantidadesVenta =
+                   cantidadesVenta =
                         cantidadesVenta
                             .toMutableMap()
                             .apply {
                                 put(
                                     producto.uuid,
-                                    "0"
+                                    "1"
                                 )
                             }
                 }
-                mostrarAgregarProductos = false
+               mostrarAgregarProductos = false
             },
-            volver = {
+           volver = {
                 mostrarAgregarProductos = false
             }
         )
-        return
+       return
     }
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(
-                paddingPantalla
+                top = dim.paddingPantalla * 2,
+                start = dim.paddingPantalla,
+                end = dim.paddingPantalla,
+                bottom = dim.paddingPantalla
             )
     ) {
         Text(
             text = "Editar Planilla",
-            fontSize = tamañoTitulo,
-            style = MaterialTheme.typography.headlineMedium
+            fontSize = dim.titulo,
+            style =
+                MaterialTheme.typography.headlineMedium
         )
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier = Modifier.height(dim.espacio)
         )
-        Text(
-            text =
-                "Evento: ${planilla.NombreEvento}",
-            fontSize = tamañoTexto
-        )
-        Text(
-            text =
-                "Fecha Desde: ${planilla.FechaDesde}",
-            fontSize = tamañoTexto
-        )
-        Text(
-            text =
-                "Fecha Hasta: ${planilla.FechaHasta}",
-            fontSize = tamañoTexto
-        )
+        Card(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier =
+                    Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text =
+                        "Evento: ${planilla.NombreEvento}",
+                    fontSize = dim.texto
+                )
+                Spacer(
+                    modifier =
+                        Modifier.height(dim.espacio)
+                )
+                Text(
+                    text =
+                        "Fecha Desde: ${planilla.FechaDesde}",
+                    fontSize = dim.texto
+                )
+                Spacer(
+                    modifier =
+                        Modifier.height(dim.espacio)
+                )
+                Text(
+                    text =
+                        "Fecha Hasta: ${planilla.FechaHasta}",
+                    fontSize = dim.texto
+                )
+            }
+        }
         Spacer(
-            modifier = Modifier.height(15.dp)
+            modifier = Modifier.height(dim.espacio)
         )
         Button(
             onClick = {
                 mostrarAgregarProductos = true
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(
-                    alturaBoton
-                )
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(dim.alturaBotonInterno)
         ) {
             Text(
-                "Agregar Productos",
-                fontSize = tamañoTexto
+                text = "Agregar Productos",
+                fontSize = dim.texto
             )
         }
         Spacer(
-            modifier = Modifier.height(15.dp)
+            modifier = Modifier.height(dim.espacio)
         )
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Producto",
-                    modifier = Modifier.weight(2f),
-                    fontSize = tamañoTexto
-                )
-                Text(
-                    text = "Cantidad",
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
-                    fontSize = tamañoTexto
-                )
-                Text(
-                    text = "Total",
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
-                    fontSize = tamañoTexto
-                )
-            }
-        }
+        // Separación sin Card ni barra gris
         Spacer(
-            modifier = Modifier.height(8.dp)
+            modifier = Modifier.height(dim.espacio)
         )
         LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            verticalArrangement =
+                Arrangement.spacedBy(8.dp)
         ) {
             items(productosVenta) { producto ->
                 val cantidadVendida =
@@ -227,42 +198,39 @@ fun EditarPlanilla(
                 val stockNuevo =
                     producto.Cantidad
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            vertical = 5.dp
-                        ),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 5.dp),
                     elevation =
                         CardDefaults.cardElevation(
                             defaultElevation = 3.dp
                         )
                 ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                if(esTablet)
-                                    20.dp
-                                else
-                                    12.dp
-                            )
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    dim.paddingPantalla
+                                )
                     ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth(),
+                            modifier =
+                                Modifier.fillMaxWidth(),
                             verticalAlignment =
                                 Alignment.CenterVertically
                         ) {
                             Text(
                                 text = producto.Nombre,
-                                fontSize = tamañoTexto,
+                                modifier =
+                                    Modifier.weight(1f),
+                                fontSize = dim.texto,
                                 maxLines = 1,
                                 overflow =
-                                    TextOverflow.Ellipsis,
-                                modifier =
-                                    Modifier.weight(1f)
+                                    TextOverflow.Ellipsis
                             )
-                            Button(
+                            IconButton(
                                 onClick = {
                                     productosVenta =
                                         productosVenta.filter {
@@ -278,106 +246,137 @@ fun EditarPlanilla(
                                             }
                                 },
                                 modifier = Modifier.size(
-                                    if(esTablet)
-                                        55.dp
-                                    else
-                                        45.dp
-                                ),
-                                contentPadding =
-                                    PaddingValues(0.dp)
+                                    dim.alturaBotonInterno
+                                )
                             ) {
-                                Text(
-                                    "❌"
+                                Icon(
+                                    imageVector =
+                                        Icons.Default.Delete,
+                                    contentDescription =
+                                        "Eliminar producto"
                                 )
                             }
                         }
                         Spacer(
-                            modifier = Modifier.height(10.dp)
+                            modifier =
+                                Modifier.height(dim.espacio)
                         )
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth(),
+                            modifier =
+                                Modifier.fillMaxWidth(),
                             horizontalArrangement =
                                 Arrangement.SpaceBetween
                         ) {
                             Text(
                                 text =
                                     "Stock: ${producto.Cantidad}",
-                                fontSize = tamañoTexto
+                                fontSize = dim.texto
                             )
                             Text(
                                 text =
                                     "Precio: $${producto.Precio}",
-                                fontSize = tamañoTexto
+                                fontSize = dim.texto
                             )
                         }
                         Spacer(
-                            modifier = Modifier.height(10.dp)
+                            modifier =
+                                Modifier.height(dim.espacio)
                         )
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth(),
+                            modifier =
+                                Modifier.fillMaxWidth(),
                             verticalAlignment =
                                 Alignment.CenterVertically
                         ) {
                             Text(
                                 text = "Cantidad:",
-                                fontSize = tamañoTexto
+                                fontSize = dim.texto
                             )
                             Spacer(
-                                modifier = Modifier.width(10.dp)
+                                modifier =
+                                    Modifier.width(dim.espacio)
                             )
-                            OutlinedTextField(
-                                value =
-                                    cantidadesVenta[producto.uuid]
-                                        ?: "0",
-                                onValueChange = { valor ->
-                                    cantidadesVenta =
-                                        cantidadesVenta
-                                            .toMutableMap()
-                                            .apply {
-                                                put(
-                                                    producto.uuid,
-                                                    valor.filter {
-                                                        it.isDigit()
+                            Row(
+                                verticalAlignment =
+                                    Alignment.CenterVertically,
+                                horizontalArrangement =
+                                    Arrangement.spacedBy(2.dp)
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        val actual =
+                                            cantidadesVenta[producto.uuid]
+                                                ?.toIntOrNull()
+                                                ?: 0
+                                        if (actual > 0) {
+                                            cantidadesVenta =
+                                                cantidadesVenta
+                                                    .toMutableMap()
+                                                    .apply {
+                                                        put(
+                                                            producto.uuid,
+                                                            (
+                                                                    actual - 1
+                                                                    ).toString()
+                                                        )
                                                     }
-                                                )
-                                            }
-                                },
-                                modifier = Modifier
-                                    .width(
-                                        if(esTablet)
-                                            150.dp
-                                        else
-                                            110.dp
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector =
+                                            Icons.Default.Remove,
+                                        contentDescription =
+                                            "Restar"
                                     )
-                                    .height(
-                                        if(esTablet)
-                                            65.dp
-                                        else
-                                            55.dp
-                                    ),
-                                singleLine = true,
-                                textStyle =
-                                    LocalTextStyle.current.copy(
-                                        textAlign =
-                                            TextAlign.Center,
-                                        fontSize = tamañoTexto
+                                }
+                                Text(
+                                    text = cantidadVendida.toString(),
+                                    modifier = Modifier.width(25.dp),
+                                    fontSize = dim.texto,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                                IconButton(
+                                    onClick = {
+                                        val actual =
+                                            cantidadesVenta[producto.uuid]
+                                                ?.toIntOrNull()
+                                                ?: 0
+                                        cantidadesVenta =
+                                            cantidadesVenta
+                                                .toMutableMap()
+                                                .apply {
+                                                    put(
+                                                        producto.uuid,
+                                                        (
+                                                                actual + 1
+                                                                ).toString()
+                                                    )
+                                                }
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector =
+                                            Icons.Default.Add,
+                                        contentDescription =
+                                            "Sumar"
                                     )
-                            )
+                                }
+                            }
                         }
                         Spacer(
-                            modifier = Modifier.height(8.dp)
+                            modifier =
+                                Modifier.height(dim.espacio)
                         )
                         Text(
                             text =
                                 "Stock nuevo: $stockNuevo",
-                            fontSize = tamañoTexto
+                            fontSize = dim.texto
                         )
                         Text(
                             text =
                                 "Total: $$totalProducto",
-                            fontSize = tamañoTexto,
+                            fontSize = dim.texto,
                             style =
                                 MaterialTheme.typography.titleMedium
                         )
@@ -391,129 +390,214 @@ fun EditarPlanilla(
                     cantidadesVenta[producto.uuid]
                         ?.toIntOrNull()
                         ?: 0
-                producto.Precio *
-                        cantidad
+                producto.Precio * cantidad
             }
         Text(
             text =
                 "TOTAL VENTA: $$totalVentaNueva",
-            fontSize = tamañoTitulo,
+            fontSize = dim.titulo,
             style =
                 MaterialTheme.typography.headlineSmall
         )
         Spacer(
-            modifier = Modifier.height(15.dp)
+            modifier =
+                Modifier.height(dim.espacio)
         )
         Button(
             onClick = {
+                if (guardando)
+                    return@Button
                 scope.launch {
-                    var totalFinal = 0
-                    val detallesAnteriores =
-                        planillaDao.obtenerDetallePlanilla(
-                            planilla.id
-                        )
-                    detallesAnteriores.forEach { detalle ->
-                        val productoAnterior =
+                    try {
+                        guardando = true
+                        var totalFinal = 0
+                        val productosModificados =
+                            mutableSetOf<String>()
+                        val productosBD =
                             productoDao.obtenerProductos()
-                                .find {
+                        val detallesAnteriores =
+                            planillaDao.obtenerDetallePlanilla(
+                                planilla.id
+                            )
+                        val stockIncorrecto =
+                            productosVenta.any { producto ->
+                                val cantidadNueva =
+                                    cantidadesVenta[producto.uuid]
+                                        ?.toIntOrNull()
+                                        ?: 0
+                                val cantidadAnterior =
+                                    detallesAnteriores.find {
+                                        it.Nombre.trim()
+                                            .equals(
+                                                producto.Nombre.trim(),
+                                                ignoreCase = true
+                                            )
+                                    }?.Ventas ?: 0
+                                val stockDisponible =
+                                    producto.Cantidad +
+                                            cantidadAnterior
+                                stockDisponible < cantidadNueva
+                            }
+                        if (stockIncorrecto) {
+                            Toast.makeText(
+                                context,
+                                "❌ No hay stock suficiente para guardar la planilla",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            guardando = false
+                            return@launch
+                        }
+                        detallesAnteriores.forEach { detalle ->
+                            val productoAnterior =
+                                productosBD.find {
                                     it.Nombre.trim()
                                         .equals(
                                             detalle.Nombre.trim(),
                                             ignoreCase = true
                                         )
                                 }
-                        if (productoAnterior != null) {
-                            val stockDevuelto =
-                                productoAnterior.Cantidad + detalle.Ventas
-                            productoDao.actualizarCantidad(
-                                productoAnterior.uuid,
-                                stockDevuelto
-                            )
-                            actualizarStockGoogle(
-                                productoAnterior.uuid,
-                                stockDevuelto
-                            )
+                            if (productoAnterior != null) {
+                                val nuevoStock =
+                                    productoAnterior.Cantidad +
+                                            detalle.Ventas
+                                productoDao.actualizarCantidad(
+                                    productoAnterior.uuid,
+                                    nuevoStock
+                                )
+                                productosModificados.add(
+                                    productoAnterior.uuid
+                                )
+                            }
                         }
-                    }
-                    planillaDao.eliminarDetallesPlanilla(
-                        planilla.id
-                    )
-                    productosVenta.forEach { producto ->
-                        val cantidadNueva =
-                            cantidadesVenta[producto.uuid]
-                                ?.toIntOrNull()
-                                ?: 0
-                        val totalProducto =
-                            producto.Precio * cantidadNueva
-                        totalFinal += totalProducto
-                        val detalleNuevo =
-                            DetallePlanilla(
-                                idPlanilla = planilla.id,
-                                Nombre = producto.Nombre.trim(),
-                                Precio = producto.Precio,
-                                Ventas = cantidadNueva,
-                                Total = totalProducto
-                            )
-                        planillaDao.insertarDetalle(
-                            detalleNuevo
+                        planillaDao.eliminarDetallesPlanilla(
+                            planilla.id
                         )
-                        val productoActual =
+                        val productosActualizados =
                             productoDao.obtenerProductos()
-                                .find {
-                                    it.uuid == producto.uuid
+                                .associateBy {
+                                    it.uuid
                                 }
-                        if (productoActual != null) {
-                            val stockFinal =
-                                productoActual.Cantidad - cantidadNueva
-                            productoDao.actualizarCantidad(
-                                producto.uuid,
-                                stockFinal
-                            )
-                            actualizarStockGoogle(
-                                producto.uuid,
-                                stockFinal
-                            )
+                        productosVenta.forEach { producto ->
+                            val cantidadNueva =
+                                cantidadesVenta[producto.uuid]
+                                    ?.toIntOrNull()
+                                    ?: 0
+                            if (cantidadNueva > 0) {
+                                val totalProducto =
+                                    producto.Precio *
+                                            cantidadNueva
+                                totalFinal += totalProducto
+                                planillaDao.insertarDetalle(
+                                    DetallePlanilla(
+                                        idPlanilla =
+                                            planilla.id,
+                                        Uudd =
+                                            planilla.Uudd,
+                                        Nombre =
+                                            producto.Nombre.trim(),
+                                        Precio =
+                                            producto.Precio,
+                                        Ventas =
+                                            cantidadNueva,
+                                        Total =
+                                            totalProducto
+                                    )
+                                )
+                                val productoBD =
+                                    productosActualizados[producto.uuid]
+                                if (productoBD != null) {
+                                    val nuevoStock =
+                                        productoBD.Cantidad -
+                                                cantidadNueva
+                                    productoDao.actualizarCantidad(
+                                        productoBD.uuid,
+                                        nuevoStock
+                                    )
+                                    productosModificados.add(
+                                        productoBD.uuid
+                                    )
+                                }
+                            }
                         }
-                    }
-                    planillaDao.actualizarPlanilla(
-                        planilla.copy(
-                            TotalVenta = totalFinal
+                        planillaDao.actualizarPlanilla(
+                            planilla.copy(
+                                totalVenta = totalFinal
+                            )
                         )
-                    )
-                    Toast.makeText(
-                        context,
-                        "✅ Planilla actualizada correctamente",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    volver()
+                        val productosParaSincronizar =
+                            productoDao.obtenerProductos()
+                                .filter {
+                                    productosModificados.contains(
+                                        it.uuid
+                                    )
+                                }
+                        Toast.makeText(
+                            context,
+                            "✅ Planilla guardada correctamente",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        volver()
+                        CoroutineScope(
+                            Dispatchers.IO
+                        ).launch {
+                            try {
+                                actualizarStocksGooglee(
+                                    productosParaSincronizar
+                                        .distinctBy {
+                                            it.uuid
+                                        }
+                                )
+                            } catch (e: Exception) {
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            "Error al guardar: ${e.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } finally {
+                        guardando = false
+                    }
                 }
             },
-            modifier = Modifier
+            modifier =Modifier
+                .widthIn(dim.alturaBotonInterno)
                 .fillMaxWidth()
-                .height(
-                    alturaBoton
-                )
+                .align(Alignment.CenterHorizontally),
+            enabled =
+                !guardando
         ) {
             Text(
-                "💾 Guardar Cambios",
-                fontSize = tamañoTexto
+                text =
+                    if (guardando)
+                        "Guardando..."
+                    else
+                        "💾 Guardar Cambios",
+                fontSize = dim.texto
             )
         }
         Spacer(
-            modifier = Modifier.height(10.dp)
+            modifier =
+                Modifier.height(dim.espacio)
         )
-        Button(
+        OutlinedButton(
             onClick = volver,
-            modifier = Modifier
+            modifier =Modifier
+                .widthIn(dim.alturaBotonInterno)
                 .fillMaxWidth()
-                .height(
-                    alturaBoton
-                )
+                .align(Alignment.CenterHorizontally)
         ) {
             Text(
-                "⬅ Volver",
-                fontSize = tamañoTexto
+                text =
+                    "⬅ Volver",
+                fontSize =
+                    dim.texto
             )
         }
+        Spacer(
+            modifier =
+                Modifier.height(dim.espacio)
+        )
     }
 }

@@ -30,14 +30,21 @@ interface PlanillaDao {
     suspend fun actualizarPlanilla(
         planilla: PlanillaVenta
     )
-    @Update
+   /* @Update
     suspend fun actualizarDetalle(
         detalle: DetallePlanilla
     )
+*/
     @Query(
         "DELETE FROM detalle_planillas WHERE idPlanilla = :id"
     )
     suspend fun eliminarDetallesPlanilla(
         id: Int
     )
+    @Query(
+        "SELECT * FROM planillas WHERE id = :id LIMIT 1"
+    )
+    suspend fun obtenerPlanillaPorId(
+        id: Int
+    ): PlanillaVenta
 }

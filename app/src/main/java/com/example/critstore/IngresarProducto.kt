@@ -1,20 +1,15 @@
 package com.example.critstore
 
-import android.widget.Toast
+import android.widget.*
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
+import androidx.compose.ui.*
+import androidx.compose.ui.platform.*
+import androidx.compose.ui.text.input.*
+import kotlinx.coroutines.*
 
 @Composable
 fun IngresarProducto(
@@ -33,36 +28,9 @@ fun IngresarProducto(
     var tipo by remember {
         mutableStateOf("")
     }
-    val context =
-        LocalContext.current
-    val scope =
-        rememberCoroutineScope()
-    val configuracion =
-        LocalConfiguration.current
-    val anchoPantalla =
-        configuracion.screenWidthDp
-    val esTablet =
-        anchoPantalla >= 600
-    val paddingPantalla =
-        if(esTablet)
-            48.dp
-        else
-            20.dp
-    val anchoFormulario =
-        if(esTablet)
-            500.dp
-        else
-            400.dp
-    val tamañoTitulo =
-        if(esTablet)
-            32.sp
-        else
-            24.sp
-    val tamañoTexto =
-        if(esTablet)
-            18.sp
-        else
-            14.sp
+    val context =LocalContext.current
+    val scope =rememberCoroutineScope()
+    val dim = obtenerDimensiones()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -70,7 +38,10 @@ fun IngresarProducto(
                 rememberScrollState()
             )
             .padding(
-                paddingPantalla
+                top = dim.paddingPantalla * 2,
+                start = dim.paddingPantalla,
+                end = dim.paddingPantalla,
+                bottom = dim.paddingPantalla
             ),
         horizontalAlignment =
             Alignment.CenterHorizontally
@@ -78,21 +49,16 @@ fun IngresarProducto(
         Column(
             modifier = Modifier
                 .widthIn(
-                    max = anchoFormulario
+                  dim.espacio
                 )
                 .fillMaxWidth()
         ){
             Text(
-                text =
-                    "Ingresar Producto",
-                fontSize =
-                    tamañoTitulo,
-                style =
-                    MaterialTheme.typography.headlineMedium
+                text ="Ingresar Producto",
+                fontSize = dim.titulo,
+                style = MaterialTheme.typography.headlineMedium
             )
-            Spacer(
-                Modifier.height(20.dp)
-            )
+            Spacer( modifier = Modifier.height(dim.espacio) )
             OutlinedTextField(
                 value =
                     nombre,
@@ -102,16 +68,14 @@ fun IngresarProducto(
                 label = {
                     Text(
                         "Nombre",
-                        fontSize = tamañoTexto
+                        fontSize = dim.texto
                     )
                 },
                 modifier =
                     Modifier.fillMaxWidth(),
                 singleLine = true
             )
-            Spacer(
-                Modifier.height(12.dp)
-            )
+            Spacer( modifier = Modifier.height(dim.espacio) )
             OutlinedTextField(
                 value =
                     cantidad,
@@ -124,7 +88,7 @@ fun IngresarProducto(
                 label = {
                     Text(
                         "Cantidad",
-                        fontSize = tamañoTexto
+                        fontSize = dim.texto
                     )
                 },
                 keyboardOptions =
@@ -136,9 +100,7 @@ fun IngresarProducto(
                     Modifier.fillMaxWidth(),
                 singleLine = true
             )
-            Spacer(
-                Modifier.height(12.dp)
-            )
+            Spacer( modifier = Modifier.height(dim.espacio) )
             OutlinedTextField(
                 value =
                     precio,
@@ -151,7 +113,7 @@ fun IngresarProducto(
                 label = {
                     Text(
                         "Precio",
-                        fontSize = tamañoTexto
+                        fontSize = dim.texto
                     )
                 },
                 keyboardOptions =
@@ -163,9 +125,7 @@ fun IngresarProducto(
                     Modifier.fillMaxWidth(),
                 singleLine = true
             )
-            Spacer(
-                Modifier.height(12.dp)
-            )
+            Spacer( modifier = Modifier.height(dim.espacio) )
             OutlinedTextField(
                 value =
                     tipo,
@@ -175,16 +135,14 @@ fun IngresarProducto(
                 label = {
                     Text(
                         "Tipo",
-                        fontSize = tamañoTexto
+                        fontSize = dim.texto
                     )
                 },
                 modifier =
                     Modifier.fillMaxWidth(),
                 singleLine = true
             )
-            Spacer(
-                Modifier.height(25.dp)
-            )
+            Spacer( modifier = Modifier.height(dim.espacio) )
             Button(
                 onClick = {
                     if(
@@ -230,41 +188,32 @@ fun IngresarProducto(
                         tipo = ""
                     }
                 },
-                modifier = Modifier
+                modifier =Modifier
+                    .widthIn(dim.alturaBotonInterno)
                     .fillMaxWidth()
-                    .height(
-                        if(esTablet)
-                            60.dp
-                        else
-                            50.dp
-                    )
+                    .align(Alignment.CenterHorizontally)
             ){
                 Text(
                     "💾 Guardar Producto",
                     fontSize =
-                        tamañoTexto
+                        dim.texto
                 )
             }
-            Spacer(
-                Modifier.height(12.dp)
-            )
+            Spacer( modifier = Modifier.height(dim.espacio) )
             OutlinedButton(
                 onClick = volver,
-                modifier = Modifier
+                modifier =Modifier
+                    .widthIn(dim.alturaBotonInterno)
                     .fillMaxWidth()
-                    .height(
-                        if(esTablet)
-                            60.dp
-                        else
-                            50.dp
-                    )
+                    .align(Alignment.CenterHorizontally)
             ){
                 Text(
                     "⬅ Volver",
                     fontSize =
-                        tamañoTexto
+                        dim.texto
                 )
             }
+ Spacer(modifier = Modifier.height(dim.alturaBotonInterno))
         }
     }
 }
