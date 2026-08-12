@@ -1,0 +1,617 @@
+function doGet(e) {
+  // ACTUALIZAR STOCK INDIVIDUAL DE PRODUCTO
+  if (e.parameter.accion == "actualizarStock") {
+    var uuid = e.parameter.uuid;
+    var cantidad = Number(e.parameter.cantidad);
+    var hoja =
+      SpreadsheetApp
+        .getActive()
+        .getSheetByName("Producto");
+    var datos =
+      hoja.getDataRange().getValues();
+    for (var i = 1; i < datos.length; i++) {
+      if (
+        String(datos[i][0]).trim() ==
+        String(uuid).trim()
+      ) {
+        hoja
+          .getRange(i + 1, 3)
+          .setValue(cantidad);
+        return ContentService
+          .createTextOutput("OK");
+      }
+    }
+    return ContentService
+      .createTextOutput(
+        "Producto no encontrado"
+      );
+  }
+
+  // ACTUALIZAR CANTIDAD DE MATERIAL
+  if (e.parameter.accion == "actualizarMaterial") {
+    var uuidMaterial = e.parameter.uuid;
+    var cantidadMaterial =
+      Number(e.parameter.cantidad);
+    var hojaMaterial =
+      SpreadsheetApp
+        .getActive()
+        .getSheetByName("Materiales");
+    var datosMaterial =
+      hojaMaterial.getDataRange().getValues();
+    for (
+      var i = 1;
+      i < datosMaterial.length;
+      i++
+    ) {
+      if (
+        String(datosMaterial[i][0]).trim() ==
+        String(uuidMaterial).trim()
+      ) {
+        hojaMaterial
+          .getRange(i + 1, 2)
+          .setValue(cantidadMaterial);
+        return ContentService
+          .createTextOutput("OK");
+      }
+    }
+    return ContentService
+      .createTextOutput(
+        "Material no encontrado"
+      );
+  }
+
+  // CONSULTAS
+  var tabla = e.parameter.tabla;
+  if (!tabla) {
+    return ContentService
+      .createTextOutput(
+        JSON.stringify({
+          error: true,
+          mensaje: "Falta el parámetro tabla",
+          ejemplos: [
+            "?tabla=Producto",
+            "?tabla=Materiales",
+            "?tabla=DetallePlanilla"
+          ]
+        })
+      )
+      .setMimeType(
+        ContentService.MimeType.JSON
+      );
+  }
+  var hoja =
+    SpreadsheetApp
+      .getActive()
+      .getSheetByName(tabla);
+  if (!hoja) {
+    return ContentService
+      .createTextOutput(
+        JSON.stringify({
+          error: true,
+          mensaje:
+            "No existe la hoja: " + tabla
+        })
+      )
+      .setMimeType(
+        ContentService.MimeType.JSON
+      );
+  }
+  var datos =
+    hoja.getDataRange().getValues();
+  var resultado = [];
+  for (
+    var i = 1;
+    i < datos.length;
+    i++
+  ) {
+
+    // PRODUCTO
+    if (tabla == "Producto") {
+      resultado.push({
+        uuid: datos[i][0],
+        nombre: datos[i][1],
+        cantidad: datos[i][2],
+        precio: datos[i][3],
+        tipo: datos[i][4]
+      });
+    }
+
+    // MATERIALES
+    if (tabla == "Materiales") {
+      resultado.push({
+        uuid: datos[i][0],
+        cantidad: datos[i][1],
+        color: datos[i][2],
+        marca: datos[i][3]
+      });
+    }
+
+    // DETALLE PLANILLA
+    if (tabla == "DetallePlanilla") {
+      resultado.push({
+        Uudd: datos[i][0],
+        nombre: datos[i][1],
+        cantidad: datos[i][2],
+        total: datos[i][3],
+        nombreEvento: datos[i][4],
+        fechaDesde: datos[i][5],
+        fechaHasta: datos[i][6],
+        totalVenta: datos[i][7]
+      });
+    }
+  }
+  return ContentService
+    .createTextOutput(
+      JSON.stringify(resultado)
+    )
+    .setMimeType(
+      ContentService.MimeType.JSON
+    );
+}
+
+function doPost(e) {
+  var datos =
+    JSON.parse(
+      e.postData.contents
+    );
+
+  // ACTUALIZAR UN STOCK DE PRODUCTO
+  if (
+    datos.accion ==
+    "actualizarStock"
+  ) {
+    var hoja =
+      SpreadsheetApp
+        .getActive()
+        .getSheetByName("Producto");
+    var valores =
+      hoja.getDataRange().getValues();
+    for (
+      var i = 1;
+      i < valores.length;
+      i++
+    ) {
+      if (
+        String(valores[i][0]).trim() ==
+        String(datos.uuid).trim()
+      ) {
+        hoja
+          .getRange(i + 1, 3)
+          .setValue(
+            datos.cantidad
+          );
+        return ContentService
+          .createTextOutput(
+            "Stock actualizado"
+          );
+      }
+    }
+    return ContentService
+      .createTextOutput(
+        "Producto no encontrado"
+      );
+  }
+
+  // ACTUALIZAR VARIOS STOCK DE PRODUCTOS
+  if (
+    datos.accion ==
+    "actualizarStocks"
+  ) {
+    var hoja =
+      SpreadsheetApp
+        .getActive()
+        .getSheetByName("Producto");
+    var valores =
+      hoja.getDataRange().getValues();
+    datos.productos.forEach(
+      function(producto) {
+        for (
+          var i = 1;
+          i < valores.length;
+          i++
+        ) {
+          if (
+            String(
+              valores[i][0]
+            ).trim() ==
+            String(
+              producto.uuid
+            ).trim()
+          ) {
+            hoja
+              .getRange(i + 1, 3)
+              .setValue(
+                producto.cantidad
+              );
+
+            break;
+          }
+        }
+      }
+    );
+    return ContentService
+      .createTextOutput(
+        "Stock actualizado"
+      );
+  }
+
+  // ACTUALIZAR UN MATERIAL
+  if (
+    datos.accion ==
+    "actualizarMaterial"
+  ) {
+    var hojaMaterial =
+      SpreadsheetApp
+        .getActive()
+        .getSheetByName("Materiales");
+    var valoresMaterial =
+      hojaMaterial
+        .getDataRange()
+        .getValues();
+    for (
+      var i = 1;
+      i < valoresMaterial.length;
+      i++
+    ) {
+      if (
+        String(
+          valoresMaterial[i][0]
+        ).trim() ==
+        String(
+          datos.uuid
+        ).trim()
+      ) {
+        hojaMaterial
+          .getRange(i + 1, 2)
+          .setValue(
+            datos.cantidad
+          );
+        hojaMaterial
+          .getRange(i + 1, 3)
+          .setValue(
+            datos.color
+          );
+        hojaMaterial
+          .getRange(i + 1, 4)
+          .setValue(
+            datos.marca
+          );
+        return ContentService
+          .createTextOutput(
+            "Material actualizado"
+          );
+      }
+    }
+    return ContentService
+      .createTextOutput(
+        "Material no encontrado"
+      );
+  }
+
+  // ACTUALIZAR VARIOS MATERIALES
+  if (
+    datos.accion ==
+    "actualizarMateriales"
+  ) {
+    var hojaMateriales =
+      SpreadsheetApp
+        .getActive()
+        .getSheetByName("Materiales");
+    var valoresMateriales =
+      hojaMateriales
+        .getDataRange()
+        .getValues();
+    datos.materiales.forEach(
+      function(material) {
+        for (
+          var i = 1;
+          i < valoresMateriales.length;
+          i++
+        ) {
+          if (
+            String(
+              valoresMateriales[i][0]
+            ).trim() ==
+            String(
+              material.uuid
+            ).trim()
+          ) {
+            hojaMateriales
+              .getRange(i + 1, 2)
+              .setValue(
+                material.cantidad
+              );
+            hojaMateriales
+              .getRange(i + 1, 3)
+              .setValue(
+                material.color
+              );
+            hojaMateriales
+              .getRange(i + 1, 4)
+              .setValue(
+                material.marca
+              );
+            break;
+          }
+        }
+      }
+    );
+    return ContentService
+      .createTextOutput(
+        "Materiales actualizados"
+      );
+  }
+
+  // ELIMINAR PRODUCTO
+  if (
+    datos.accion ==
+    "eliminarProducto"
+  ) {
+    var hoja =
+      SpreadsheetApp
+        .getActive()
+        .getSheetByName("Producto");
+    var valores =
+      hoja.getDataRange().getValues();
+    for (
+      var i = 1;
+      i < valores.length;
+      i++
+    ) {
+      if (
+        String(
+          valores[i][0]
+        ).trim() ==
+        String(
+          datos.uuid
+        ).trim()
+      ) {
+
+        hoja.deleteRow(i + 1);
+
+        return ContentService
+          .createTextOutput(
+            "Producto eliminado"
+          );
+      }
+    }
+    return ContentService
+      .createTextOutput(
+        "Producto no encontrado"
+      );
+  }
+
+  // ELIMINAR MATERIAL
+  if (
+    datos.accion ==
+    "eliminarMaterial"
+  ) {
+    var hojaMaterial =
+      SpreadsheetApp
+        .getActive()
+        .getSheetByName("Materiales");
+    var valoresMaterial =
+      hojaMaterial
+        .getDataRange()
+        .getValues();
+    for (
+      var i = 1;
+      i < valoresMaterial.length;
+      i++
+    ) {
+      if (
+        String(
+          valoresMaterial[i][0]
+        ).trim() ==
+        String(
+          datos.uuid
+        ).trim()
+      ) {
+        hojaMaterial
+          .deleteRow(i + 1);
+        return ContentService
+          .createTextOutput(
+            "Material eliminado"
+          );
+      }
+    }
+    return ContentService
+      .createTextOutput(
+        "Material no encontrado"
+      );
+  }
+
+  // PRODUCTO INSERTAR / ACTUALIZAR
+  if (
+    datos.tabla ==
+    "Producto"
+  ) {
+    var hoja =
+      SpreadsheetApp
+        .getActive()
+        .getSheetByName("Producto");
+    var valores =
+      hoja.getDataRange().getValues();
+    for (
+      var i = 1;
+      i < valores.length;
+      i++
+    ) {
+      if (
+        String(
+          valores[i][0]
+        ).trim() ==
+        String(
+          datos.uuid
+        ).trim()
+      ) {
+        hoja
+          .getRange(i + 1, 2)
+          .setValue(
+            datos.nombre
+          );
+        hoja
+          .getRange(i + 1, 3)
+          .setValue(
+            datos.cantidad
+          );
+        hoja
+          .getRange(i + 1, 4)
+          .setValue(
+            datos.precio
+          );
+        hoja
+          .getRange(i + 1, 5)
+          .setValue(
+            datos.tipo
+          );
+        return ContentService
+          .createTextOutput(
+            "Producto actualizado"
+          );
+      }
+    }
+    hoja.appendRow([
+      datos.uuid,
+      datos.nombre,
+      datos.cantidad,
+      datos.precio,
+      datos.tipo
+    ]);
+    return ContentService
+      .createTextOutput(
+        "Producto nuevo"
+      );
+  }
+
+  // MATERIALES INSERTAR / ACTUALIZAR
+  if (
+    datos.tabla ==
+    "Materiales"
+  ) {
+    var hojaMateriales =
+      SpreadsheetApp
+        .getActive()
+        .getSheetByName("Materiales");
+    var valoresMateriales =
+      hojaMateriales
+        .getDataRange()
+        .getValues();
+    // BUSCAR SI YA EXISTE
+    for (
+      var i = 1;
+      i < valoresMateriales.length;
+      i++
+    ) {
+      if (
+        String(
+          valoresMateriales[i][0]
+        ).trim() ==
+        String(
+          datos.uuid
+        ).trim()
+      ) {
+        hojaMateriales
+          .getRange(i + 1, 2)
+          .setValue(
+            datos.cantidad
+          );
+        hojaMateriales
+          .getRange(i + 1, 3)
+          .setValue(
+            datos.color
+          );
+        hojaMateriales
+          .getRange(i + 1, 4)
+          .setValue(
+            datos.marca
+          );
+        return ContentService
+          .createTextOutput(
+            "Material actualizado"
+          );
+      }
+    }
+    // MATERIAL NUEVO
+    hojaMateriales.appendRow([
+      datos.uuid,
+      datos.cantidad,
+      datos.color,
+      datos.marca
+    ]);
+    return ContentService
+      .createTextOutput(
+        "Material nuevo"
+      );
+  }
+
+  // ELIMINAR DETALLES DE UNA PLANILLA
+  if (
+    datos.accion ==
+    "eliminarDetallePlanilla"
+  ) {
+    var hoja =
+      SpreadsheetApp
+        .getActive()
+        .getSheetByName(
+          "DetallePlanilla"
+        );
+    var valores =
+      hoja.getDataRange().getValues();
+    for (
+      var i = valores.length - 1;
+      i >= 1;
+      i--
+    ) {
+      if (
+        String(
+          valores[i][0]
+        ).trim() ==
+        String(
+          datos.uudd
+        ).trim()
+      ) {
+        hoja.deleteRow(
+          i + 1
+        );
+      }
+    }
+    return ContentService
+      .createTextOutput(
+        "Detalles eliminados"
+      );
+  }
+
+  // DETALLE PLANILLA
+  if (
+    datos.tabla ==
+    "DetallePlanilla"
+  ) {
+    var hoja =
+      SpreadsheetApp
+        .getActive()
+        .getSheetByName(
+          "DetallePlanilla"
+        );
+    hoja.appendRow([
+      datos.uudd,
+      datos.nombre,
+      datos.cantidad,
+      datos.total,
+      datos.nombreEvento,
+      datos.fechaDesde,
+      datos.fechaHasta,
+      datos.totalVenta
+    ]);
+    return ContentService
+      .createTextOutput(
+        "Detalle nuevo"
+      );
+  }
+
+  // TABLA NO ENCONTRADA
+  return ContentService
+    .createTextOutput(
+      "Tabla no encontrada"
+    );
+}
